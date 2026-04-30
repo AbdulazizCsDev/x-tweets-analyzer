@@ -93,10 +93,9 @@ def fetch_tweets(username: str, apify_token: str, max_tweets: int = 10000) -> li
     client = ApifyClient(apify_token)
 
     run_input = {
-        "searchTerms":   [f"from:{username}"],
-        "maxItems":      max_tweets,
-        "sort":          "Latest",
-        "tweetLanguage": "any",
+        "searchTerms": [f"from:{username}"],
+        "maxItems":    max_tweets,
+        "sort":        "Latest",
     }
 
     run = client.actor(ACTOR_ID).call(run_input=run_input)
