@@ -36,10 +36,10 @@ def _fmt(tweets: list[dict], label: str = "") -> str:
     )
 
 
-def _call(client: anthropic.Anthropic, tweet_block: str, user_prompt: str) -> dict:
+def _call(client: anthropic.Anthropic, tweet_block: str, user_prompt: str, max_tokens: int = 6000) -> dict:
     response = client.messages.create(
         model=_MODEL,
-        max_tokens=3000,
+        max_tokens=max_tokens,
         system=[
             {"type": "text", "text": SYSTEM_BASE, "cache_control": {"type": "ephemeral"}},
             {"type": "text", "text": f"<tweets>\n{tweet_block}\n</tweets>", "cache_control": {"type": "ephemeral"}},
@@ -47,6 +47,11 @@ def _call(client: anthropic.Anthropic, tweet_block: str, user_prompt: str) -> di
         messages=[{"role": "user", "content": user_prompt}],
     )
     raw = response.content[0].text.strip()
+    if response.stop_reason == "max_tokens":
+        raise RuntimeError(
+            f"رد Claude تم قطعه بسبب طول الإجابة (max_tokens={max_tokens}). "
+            "حاول مرة أخرى أو قلّل عدد العناصر المطلوبة."
+        )
     m = re.search(r"```(?:json)?\s*(\{.*\})\s*```", raw, re.DOTALL)
     if m:
         return json.loads(m.group(1))
