@@ -4,6 +4,7 @@ Uses prompt caching for tweet data (cache_control: ephemeral).
 Each kind is a separate API call that returns structured JSON.
 """
 import json
+import re
 import random
 import anthropic
 
@@ -21,7 +22,6 @@ def _sample(tweets: list[dict], n: int = _SAMPLE_SIZE) -> list[dict]:
 def _tweets_text(tweets: list[dict]) -> str:
     lines = []
     for i, t in enumerate(tweets, 1):
-        eng = t.get("likes", 0) + t.get("retweets", 0) + t.get("replies", 0)
         lines.append(
             f"{i}. [{t.get('created_at','')[:10]}] "
             f"❤️{t.get('likes',0)} 🔁{t.get('retweets',0)} 💬{t.get('replies',0)} "
@@ -30,10 +30,22 @@ def _tweets_text(tweets: list[dict]) -> str:
     return "\n".join(lines)
 
 
+def _extract_json(raw: str) -> dict:
+    """Pull a JSON object out of Claude's response, even if surrounded by prose or fences."""
+    raw = raw.strip()
+    fence = re.search(r"```(?:json)?\s*(\{.*?\})\s*```", raw, re.DOTALL)
+    if fence:
+        return json.loads(fence.group(1))
+    obj = re.search(r"\{.*\}", raw, re.DOTALL)
+    if obj:
+        return json.loads(obj.group(0))
+    return json.loads(raw)
+
+
 def _call(client: anthropic.Anthropic, system: str, tweet_block: str, user_prompt: str) -> dict:
     response = client.messages.create(
         model=_MODEL,
-        max_tokens=2000,
+        max_tokens=4000,
         system=[
             {
                 "type": "text",
@@ -48,13 +60,14 @@ def _call(client: anthropic.Anthropic, system: str, tweet_block: str, user_promp
         ],
         messages=[{"role": "user", "content": user_prompt}],
     )
-    raw = response.content[0].text.strip()
-    # Extract JSON if wrapped in code fences
-    if "```" in raw:
-        raw = raw.split("```")[1]
-        if raw.startswith("json"):
-            raw = raw[4:]
-    return json.loads(raw.strip())
+    raw = "".join(b.text for b in response.content if getattr(b, "type", "") == "text").strip()
+    if not raw:
+        raise RuntimeError("Claude رجّع رداً فارغاً")
+    try:
+        return _extract_json(raw)
+    except json.JSONDecodeError as e:
+        snippet = raw[:300].replace("\n", " ")
+        raise RuntimeError(f"تعذّر تحليل JSON من Claude: {e} — بداية الرد: {snippet}") from e
 
 
 SYSTEM_BASE = """أنت محلل متخصص في محتوى تويتر/X.

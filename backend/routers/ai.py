@@ -1,4 +1,5 @@
 from fastapi import APIRouter, HTTPException
+import anthropic
 from models import AIInsightRequest
 from db import get_tweets, get_ai_cache, set_ai_cache
 from services import claude_service
@@ -25,8 +26,12 @@ def get_insight(kind: str, body: AIInsightRequest):
     try:
         fn = claude_service.KIND_MAP[kind]
         result = fn(tweets, body.anthropic_key)
+    except anthropic.APIStatusError as e:
+        raise HTTPException(e.status_code or 502, f"Claude API: {e.message or str(e)}")
+    except anthropic.APIError as e:
+        raise HTTPException(502, f"Claude API: {e}")
     except Exception as e:
-        raise HTTPException(500, f"خطأ من Claude API: {e}")
+        raise HTTPException(500, f"خطأ في التحليل: {type(e).__name__}: {e}")
 
     set_ai_cache(body.account, kind, result)
     return {"data": result, "cached": False}

@@ -60,8 +60,10 @@ function InsightCard({ cfg, account, apiKey }: {
       setData(res.data);
       setCached(res.cached);
     } catch (e: unknown) {
-      const err = e as { response?: { data?: { detail?: string } } };
-      setError(err?.response?.data?.detail || "خطأ في تشغيل التحليل");
+      const err = e as { response?: { data?: { detail?: string }; status?: number }; message?: string };
+      const detail = err?.response?.data?.detail;
+      const status = err?.response?.status;
+      setError(detail || (status ? `خطأ ${status}: ${err.message}` : err?.message || "خطأ في تشغيل التحليل"));
     } finally {
       setLoading(false);
     }
