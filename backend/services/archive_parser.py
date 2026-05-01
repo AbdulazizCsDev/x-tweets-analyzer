@@ -1,17 +1,23 @@
 """
 Parse X (Twitter) data archive ZIP.
-The archive contains data/tweets.js with format:
-  window.YTD.tweets.part0 = [ { "tweet": {...} }, ... ]
+
+Large archives split tweets across multiple files:
+  data/tweets.js
+  data/tweets-part1.js
+  data/tweets-part2.js
+  ...
+Each file looks like:
+  window.YTD.tweets.partN = [ { "tweet": {...} }, ... ]
 """
 import re
 import json
 import zipfile
 import io
 from datetime import datetime, timezone
-from pathlib import Path
 
 
 _CREATED_AT_FMT = "%a %b %d %H:%M:%S %z %Y"
+_TWEETS_FILE_RE = re.compile(r"(?:^|/)tweets(?:-part\d+)?\.js$", re.IGNORECASE)
 
 
 def _parse_date(raw: str) -> str:
@@ -22,11 +28,12 @@ def _parse_date(raw: str) -> str:
         return raw
 
 
-def _extract_tweets_js(zf: zipfile.ZipFile) -> str:
-    candidates = [n for n in zf.namelist() if n.endswith("tweets.js")]
+def _extract_all_tweet_files(zf: zipfile.ZipFile) -> list[str]:
+    """Return all tweets*.js file contents — archives split into parts."""
+    candidates = sorted(n for n in zf.namelist() if _TWEETS_FILE_RE.search(n))
     if not candidates:
         raise ValueError("لم يتم العثور على ملف tweets.js داخل الأرشيف")
-    return zf.read(candidates[0]).decode("utf-8", errors="replace")
+    return [zf.read(n).decode("utf-8", errors="replace") for n in candidates]
 
 
 def _js_to_json(raw: str) -> list[dict]:
@@ -40,6 +47,15 @@ def _js_to_json(raw: str) -> list[dict]:
 def _normalize(tweet_obj: dict) -> dict:
     t = tweet_obj.get("tweet", tweet_obj)
 
+    # Long tweets (>280 chars) store the full content in noteTweet.fullText
+    note = t.get("noteTweet", {}).get("core", {}) if isinstance(t.get("noteTweet"), dict) else {}
+    full_text = (
+        note.get("text")
+        or t.get("note_tweet", {}).get("text")
+        or t.get("full_text")
+        or t.get("text", "")
+    )
+
     hashtags = [h["text"].lower() for h in
                 t.get("entities", {}).get("hashtags", [])]
     mentions = [m["screen_name"].lower() for m in
@@ -50,8 +66,8 @@ def _normalize(tweet_obj: dict) -> dict:
     )
 
     return {
-        "id":          t.get("id_str") or t.get("id", ""),
-        "text":        t.get("full_text") or t.get("text", ""),
+        "id":          t.get("id_str") or str(t.get("id", "")),
+        "text":        full_text,
         "created_at":  _parse_date(t.get("created_at", "")),
         "likes":       int(t.get("favorite_count", 0)),
         "retweets":    int(t.get("retweet_count", 0)),
@@ -69,12 +85,29 @@ def _normalize(tweet_obj: dict) -> dict:
 def parse_archive(file_bytes: bytes, account: str) -> tuple[list[dict], str]:
     """Return (tweets, detected_handle)."""
     with zipfile.ZipFile(io.BytesIO(file_bytes)) as zf:
-        raw = _extract_tweets_js(zf)
+        raw_files = _extract_all_tweet_files(zf)
 
-    items = _js_to_json(raw)
-    tweets = [_normalize(item) for item in items]
+    all_items: list[dict] = []
+    for raw in raw_files:
+        try:
+            all_items.extend(_js_to_json(raw))
+        except (ValueError, json.JSONDecodeError):
+            continue
 
-    # Filter out retweets (text starts with RT @)
-    tweets = [t for t in tweets if not t["text"].startswith("RT @")]
+    if not all_items:
+        raise ValueError("الأرشيف لا يحتوي على تغريدات قابلة للقراءة")
 
-    return tweets, account
+    tweets = [_normalize(item) for item in all_items]
+
+    # Filter retweets and deduplicate by ID
+    seen: set[str] = set()
+    unique: list[dict] = []
+    for t in tweets:
+        if not t["id"] or t["id"] in seen:
+            continue
+        if t["text"].startswith("RT @"):
+            continue
+        seen.add(t["id"])
+        unique.append(t)
+
+    return unique, account
