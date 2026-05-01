@@ -2,7 +2,6 @@
 
 import {
   BarChart, Bar, XAxis, YAxis, ResponsiveContainer, Tooltip, Cell,
-  PieChart, Pie, Legend
 } from "recharts";
 import { Heart, Repeat, MessageCircle } from "lucide-react";
 import { formatNumber } from "@/lib/utils";
@@ -14,10 +13,8 @@ interface Top10Item {
 interface Hashtag { tag: string; count: number; avg_eng: number; }
 interface Mention { account: string; count: number; }
 interface WordItem { word: string; count: number; }
-interface Bigram { phrase: string; count: number; }
-interface Emoji { emoji: string; count: number; }
 
-const CHART_COLORS = ["#3b82f6","#8b5cf6","#ec4899","#f59e0b","#10b981","#06b6d4","#f43f5e"];
+const CHART_COLORS = ["#3b82f6","#8b5cf6"];
 
 export default function BasicTab({ data }: { data: Record<string, unknown> }) {
   return (
@@ -36,20 +33,13 @@ export default function BasicTab({ data }: { data: Record<string, unknown> }) {
         <Mentions items={data.top_mentions as Mention[]} />
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <Words items={data.word_freq as WordItem[]} />
-        <Bigrams items={data.top_bigrams as Bigram[]} />
-        <SentimentCard data={data.sentiment as Record<string, number>} />
+        <MediaImpact data={data.media_impact as { with_media_avg: number; without_media_avg: number }} />
       </div>
-
-      <MediaImpact data={data.media_impact as { with_media_avg: number; without_media_avg: number }} />
-
-      <StyleCard data={data.style as Record<string, unknown>} />
     </div>
   );
 }
-
-/* ── charts ──────────────────────────────────────────────────────────────── */
 
 function HourlyChart({ data }: { data: { hour: number; avg: number }[] }) {
   return (
@@ -86,7 +76,6 @@ function DailyChart({ data }: { data: { day: string; avg: number }[] }) {
 function Heatmap({ data }: { data: Record<string, Record<string, number>> }) {
   const days = Object.keys(data);
   const max = Math.max(...days.flatMap(d => Object.values(data[d])));
-
   return (
     <div className="card">
       <h3 className="font-bold mb-4">🔥 خريطة التفاعل (يوم × ساعة)</h3>
@@ -220,48 +209,6 @@ function Words({ items }: { items: WordItem[] }) {
   );
 }
 
-function Bigrams({ items }: { items: Bigram[] }) {
-  return (
-    <div className="card">
-      <h3 className="font-bold mb-4">📚 أكثر العبارات</h3>
-      {items.length === 0 ? (
-        <p className="text-slate-400 text-sm">لا توجد عبارات كافية</p>
-      ) : (
-        <div className="space-y-1">
-          {items.slice(0, 12).map((b, i) => (
-            <div key={i} className="flex items-center justify-between text-sm py-1">
-              <span className="text-slate-300">{b.phrase}</span>
-              <span className="text-xs text-slate-500">{b.count}×</span>
-            </div>
-          ))}
-        </div>
-      )}
-    </div>
-  );
-}
-
-function SentimentCard({ data }: { data: Record<string, number> }) {
-  const items = [
-    { name: "إيجابي", value: data.positive, color: "#10b981" },
-    { name: "محايد", value: data.neutral, color: "#94a3b8" },
-    { name: "سلبي", value: data.negative, color: "#ef4444" },
-  ];
-  return (
-    <div className="card">
-      <h3 className="font-bold mb-4">😊 توزيع المشاعر</h3>
-      <ResponsiveContainer width="100%" height={200}>
-        <PieChart>
-          <Pie data={items} cx="50%" cy="50%" innerRadius={40} outerRadius={70} paddingAngle={2} dataKey="value">
-            {items.map((it, i) => <Cell key={i} fill={it.color} />)}
-          </Pie>
-          <Tooltip contentStyle={{ background: "#0f172a", border: "1px solid #334155", borderRadius: 8 }} />
-          <Legend wrapperStyle={{ fontSize: 12 }} />
-        </PieChart>
-      </ResponsiveContainer>
-    </div>
-  );
-}
-
 function MediaImpact({ data }: { data: { with_media_avg: number; without_media_avg: number } }) {
   const items = [
     { name: "مع وسائط", value: data.with_media_avg },
@@ -280,43 +227,6 @@ function MediaImpact({ data }: { data: { with_media_avg: number; without_media_a
           </Bar>
         </BarChart>
       </ResponsiveContainer>
-    </div>
-  );
-}
-
-function StyleCard({ data }: { data: Record<string, unknown> }) {
-  const emojis = data.top_emojis as { emoji: string; count: number }[];
-  return (
-    <div className="card">
-      <h3 className="font-bold mb-4">📝 أسلوب الكتابة</h3>
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-        <Stat label="متوسط الطول" value={`${data.avg_length} حرف`} />
-        <Stat label="نسبة الأسئلة" value={`${data.has_question_pct}%`} />
-        <Stat label="نسبة التعجب" value={`${data.has_exclaim_pct}%`} />
-        <Stat label="عدد الإيموجيات" value={emojis.length.toString()} />
-      </div>
-      {emojis.length > 0 && (
-        <>
-          <p className="text-sm text-slate-400 mb-2">أكثر الإيموجيات استخداماً:</p>
-          <div className="flex flex-wrap gap-2">
-            {emojis.map((e) => (
-              <div key={e.emoji} className="bg-slate-800/50 rounded-lg px-3 py-2 text-sm">
-                <span className="text-xl">{e.emoji}</span>
-                <span className="text-slate-400 mr-2 text-xs">×{e.count}</span>
-              </div>
-            ))}
-          </div>
-        </>
-      )}
-    </div>
-  );
-}
-
-function Stat({ label, value }: { label: string; value: string }) {
-  return (
-    <div>
-      <p className="text-xs text-slate-400 mb-1">{label}</p>
-      <p className="text-lg font-bold">{value}</p>
     </div>
   );
 }

@@ -16,24 +16,6 @@ _AR_STOP = {
     "https","http","co","t",
 }
 
-_AR_POS = {
-    "ممتاز","جميل","رائع","أفضل","مميز","شكرا","سعيد","نجاح","حلو","قوي",
-    "مفيد","مذهل","عظيم","عبقري","مثالي","محترم","بطل","مبروك","موفق","ساحر",
-    "واو","خرافي","جنان","روعة","تحفة","جامد","كفو","فنان","رهيب","عجبني",
-    "good","great","awesome","amazing","love","nice","happy","perfect",
-    "excellent","cool","win","helpful","fantastic","wonderful","brilliant",
-    "super","epic","best","success","joy","outstanding","positive","hope",
-}
-
-_AR_NEG = {
-    "سيء","رديء","أسوأ","حزين","خسارة","فشل","ضعيف","مزعج","كارثي","غلط",
-    "مقرف","ممل","محبط","بشع","كراهية","كارثة","فوضى","مشكلة","هزيمة","كئيب",
-    "قهر","طفش","خايس","بايخ","زفت","تعب","نكد","مسخرة","قرف","تعبان","ملل",
-    "bad","worse","worst","sad","angry","hate","disappoint","fake","weak",
-    "terrible","awful","fail","loss","boring","useless","stupid","ugly",
-    "trouble","fear","negative","problem","chaos","harm","toxic","sucks",
-}
-
 
 def _to_dt(raw: str) -> datetime | None:
     try:
@@ -61,16 +43,6 @@ def _tokens(text: str) -> list[str]:
     toks = re.findall(r"[a-zA-Z؀-ۿ]+", normalized)
     return [t for t in toks if len(t) >= 2 and t not in _AR_STOP]
 
-
-def _sentiment(text: str) -> str:
-    toks = set(_tokens(text))
-    pos = len(toks & _AR_POS)
-    neg = len(toks & _AR_NEG)
-    if pos > neg:
-        return "positive"
-    if neg > pos:
-        return "negative"
-    return "neutral"
 
 
 def run(tweets: list[dict]) -> dict:
@@ -160,21 +132,6 @@ def run(tweets: list[dict]) -> dict:
 
     word_freq = [{"word": w, "count": c} for w, c in Counter(all_tokens).most_common(50)]
 
-    bigrams: Counter = Counter()
-    for t in tweets:
-        toks = _tokens(t.get("text", ""))
-        for i in range(len(toks) - 1):
-            bigrams[f"{toks[i]} {toks[i+1]}"] += 1
-    top_bigrams = [{"phrase": p, "count": c} for p, c in bigrams.most_common(20)]
-
-    # ── sentiment ─────────────────────────────────────────────────────────
-    sent_counts = Counter(_sentiment(t.get("text", "")) for t in tweets)
-    sentiment = {
-        "positive": sent_counts.get("positive", 0),
-        "neutral":  sent_counts.get("neutral", 0),
-        "negative": sent_counts.get("negative", 0),
-    }
-
     # ── media impact ──────────────────────────────────────────────────────
     with_media    = [t["_eng"] for t in tweets if t.get("has_media")]
     without_media = [t["_eng"] for t in tweets if not t.get("has_media")]
@@ -182,14 +139,6 @@ def run(tweets: list[dict]) -> dict:
         "with_media_avg":    round(sum(with_media)/len(with_media), 1)    if with_media    else 0,
         "without_media_avg": round(sum(without_media)/len(without_media), 1) if without_media else 0,
     }
-
-    # ── style metrics ─────────────────────────────────────────────────────
-    lengths = [len(t.get("text", "")) for t in tweets]
-    emoji_pattern = r"[\U0001F300-\U0001FAD6\U0001F900-\U0001F9FF\U00002600-\U000026FF]"
-    all_emojis = Counter()
-    for t in tweets:
-        all_emojis.update(re.findall(emoji_pattern, t.get("text", "")))
-    top_emojis = [{"emoji": e, "count": c} for e, c in all_emojis.most_common(10)]
 
     # ── summary metrics ───────────────────────────────────────────────────
     total_eng = sum(t["_eng"] for t in tweets)
@@ -222,13 +171,5 @@ def run(tweets: list[dict]) -> dict:
         "top_hashtags":  top_hashtags,
         "top_mentions":  top_mentions,
         "word_freq":     word_freq,
-        "top_bigrams":   top_bigrams,
-        "sentiment":     sentiment,
         "media_impact":  media_impact,
-        "style": {
-            "avg_length":    round(sum(lengths)/len(lengths), 1) if lengths else 0,
-            "top_emojis":    top_emojis,
-            "has_question_pct": round(sum(1 for t in tweets if "?" in t.get("text","")) / total * 100, 1),
-            "has_exclaim_pct":  round(sum(1 for t in tweets if "!" in t.get("text","")) / total * 100, 1),
-        },
     }
