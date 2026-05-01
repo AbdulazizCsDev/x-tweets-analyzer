@@ -1,8 +1,7 @@
 from fastapi import APIRouter, UploadFile, File, HTTPException
-from models import ApifyRequest, IngestResponse
+from models import IngestResponse
 from db import upsert_tweets, get_accounts, invalidate_ai_cache
 from services.archive_parser import parse_archive
-from services.apify_client import fetch_tweets
 
 router = APIRouter()
 
@@ -28,22 +27,6 @@ async def ingest_archive(
     invalidate_ai_cache(handle)
 
     return IngestResponse(account=handle, count=len(tweets), source="archive")
-
-
-@router.post("/apify", response_model=IngestResponse)
-async def ingest_apify(body: ApifyRequest):
-    try:
-        tweets = fetch_tweets(body.username, body.apify_token, body.max_tweets)
-    except Exception as e:
-        raise HTTPException(422, str(e))
-
-    if not tweets:
-        raise HTTPException(422, "لم يتم العثور على تغريدات — تحقق من صحة اسم الحساب")
-
-    upsert_tweets(tweets, body.username)
-    invalidate_ai_cache(body.username)
-
-    return IngestResponse(account=body.username, count=len(tweets), source="apify")
 
 
 @router.get("/accounts")

@@ -1,5 +1,4 @@
 from pydantic import BaseModel
-from typing import Optional
 
 
 class Tweet(BaseModel):
@@ -23,12 +22,6 @@ class IngestResponse(BaseModel):
     account: str
     count: int
     source: str
-
-
-class ApifyRequest(BaseModel):
-    username: str
-    apify_token: str
-    max_tweets: int = 10000
 
 
 class AIInsightRequest(BaseModel):

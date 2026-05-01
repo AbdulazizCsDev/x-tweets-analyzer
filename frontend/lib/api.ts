@@ -26,19 +26,6 @@ export async function uploadArchive(
   return data;
 }
 
-export async function fetchApify(
-  username: string,
-  apifyToken: string,
-  maxTweets = 10000
-): Promise<IngestResponse> {
-  const { data } = await api.post<IngestResponse>("/ingest/apify", {
-    username,
-    apify_token: apifyToken,
-    max_tweets: maxTweets,
-  });
-  return data;
-}
-
 export async function getAccounts(): Promise<Account[]> {
   const { data } = await api.get<Account[]>("/ingest/accounts");
   return data;
