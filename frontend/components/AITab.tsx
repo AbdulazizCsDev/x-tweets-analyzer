@@ -55,24 +55,55 @@ const SAMPLE_QUESTIONS = [
   "كيف أحوّل المتابعين إلى عملاء بمحتواي؟",
 ];
 
+function isValidKey(key: string): boolean {
+  return key.startsWith("sk-ant-") && key.length >= 40;
+}
+
 export default function AITab({ account, apiKey }: { account: string; apiKey: string }) {
-  if (!apiKey) {
+  const validKey = isValidKey(apiKey);
+
+  if (!validKey) {
+    const hasContent = apiKey.length > 0;
     return (
-      <div className="card text-center py-14" style={{ borderColor: "rgba(139,92,246,0.15)" }}>
+      <div className="card text-center py-14" style={{ borderColor: hasContent ? "rgba(239,68,68,0.2)" : "rgba(139,92,246,0.15)" }}>
         <div
           className="w-14 h-14 rounded-2xl flex items-center justify-center mx-auto mb-4"
-          style={{ background: "linear-gradient(135deg, #8b5cf630, #6d28d930)" }}
+          style={{ background: hasContent ? "rgba(239,68,68,0.1)" : "linear-gradient(135deg, #8b5cf630, #6d28d930)" }}
         >
-          <BookOpen size={28} style={{ color: "#a78bfa" }} />
+          <BookOpen size={28} style={{ color: hasContent ? "#f87171" : "#a78bfa" }} />
         </div>
-        <h3 className="text-lg font-bold mb-2">أدخل مفتاح Anthropic لتشغيل التحليلات</h3>
-        <p className="text-slate-400 text-sm max-w-md mx-auto leading-relaxed">
-          استخدم زر{" "}
-          <span className="text-amber-400 font-semibold">⚠ أدخل مفتاح Anthropic</span>{" "}
-          في الأعلى.
-          <br />
-          المفتاح يُحفظ في متصفحك فقط — لا يصل إليه أحد.
-        </p>
+        {hasContent ? (
+          <>
+            <h3 className="text-lg font-bold mb-2 text-red-400">صيغة المفتاح غير صحيحة</h3>
+            <p className="text-sm max-w-md mx-auto leading-relaxed" style={{ color: "var(--muted)" }}>
+              مفاتيح Anthropic تبدأ دائماً بـ{" "}
+              <code className="px-1.5 py-0.5 rounded text-xs" style={{ background: "rgba(139,92,246,0.15)", color: "#a78bfa" }}>
+                sk-ant-
+              </code>
+              {" "}وطولها أكثر من ٤٠ حرفاً.
+              <br />
+              <a
+                href="https://console.anthropic.com/settings/keys"
+                target="_blank"
+                className="hover:underline mt-2 inline-block"
+                style={{ color: "#a78bfa" }}
+              >
+                احصل على مفتاحك الصحيح من console.anthropic.com →
+              </a>
+            </p>
+          </>
+        ) : (
+          <>
+            <h3 className="text-lg font-bold mb-2">أدخل مفتاح Anthropic لتشغيل التحليلات</h3>
+            <p className="text-sm max-w-md mx-auto leading-relaxed" style={{ color: "var(--muted)" }}>
+              استخدم زر{" "}
+              <span className="font-semibold" style={{ color: "#fbbf24" }}>⚠ مفتاح AI</span>{" "}
+              في الأعلى لإدخال مفتاح Anthropic.
+              <br />
+              المفتاح يُحفظ في متصفحك فقط — لا يصل إليه أحد.
+            </p>
+          </>
+        )}
       </div>
     );
   }

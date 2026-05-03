@@ -209,15 +209,23 @@ function TabBtn({ active, onClick, icon, label }: {
 }
 
 /* ── Anthropic Key Input ── */
+function isValidKey(key: string) {
+  return key.startsWith("sk-ant-") && key.length >= 40;
+}
+
 function KeyInput({ value, onChange }: { value: string; onChange: (v: string) => void }) {
   const [open, setOpen] = useState(false);
+  const valid = isValidKey(value);
+  const badgeClass = valid ? "badge-green" : value.length > 0 ? "badge-red" : "badge-yellow";
+  const label = valid ? "✓ Anthropic" : value.length > 0 ? "✕ مفتاح خاطئ" : "⚠ مفتاح AI";
+
   return (
     <div className="relative">
       <button
         onClick={() => setOpen(!open)}
-        className={`badge cursor-pointer ${value ? "badge-green" : "badge-yellow"}`}
+        className={`badge cursor-pointer ${badgeClass}`}
       >
-        {value ? "✓ Anthropic" : "⚠ مفتاح AI"}
+        {label}
       </button>
       {open && (
         <div
