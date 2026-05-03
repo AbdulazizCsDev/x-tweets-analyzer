@@ -12,7 +12,6 @@ Each file looks like:
 import re
 import json
 import zipfile
-import io
 from datetime import datetime, timezone
 
 
@@ -82,9 +81,9 @@ def _normalize(tweet_obj: dict) -> dict:
     }
 
 
-def parse_archive(file_bytes: bytes, account: str) -> tuple[list[dict], str]:
-    """Return (tweets, detected_handle)."""
-    with zipfile.ZipFile(io.BytesIO(file_bytes)) as zf:
+def parse_archive(file_path: str, account: str) -> tuple[list[dict], str]:
+    """Parse archive ZIP from disk. Returns (tweets, detected_handle)."""
+    with zipfile.ZipFile(file_path) as zf:
         raw_files = _extract_all_tweet_files(zf)
 
     all_items: list[dict] = []

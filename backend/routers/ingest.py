@@ -1,9 +1,13 @@
+import os
+import tempfile
 from fastapi import APIRouter, UploadFile, File, HTTPException
 from models import IngestResponse
 from db import upsert_tweets, get_accounts, invalidate_ai_cache
 from services.archive_parser import parse_archive
 
 router = APIRouter()
+
+_CHUNK = 1024 * 1024  # 1 MB chunks to avoid memory bloat / Windows socket buffer errors
 
 
 @router.post("/archive", response_model=IngestResponse)
@@ -14,11 +18,25 @@ async def ingest_archive(
     if not file.filename.endswith(".zip"):
         raise HTTPException(400, "الملف يجب أن يكون ZIP")
 
-    content = await file.read()
+    # Stream upload to a temp file in chunks so we don't load 500MB into memory.
+    fd, tmp_path = tempfile.mkstemp(suffix=".zip")
     try:
-        tweets, handle = parse_archive(content, account)
-    except Exception as e:
-        raise HTTPException(422, str(e))
+        with os.fdopen(fd, "wb") as out:
+            while True:
+                chunk = await file.read(_CHUNK)
+                if not chunk:
+                    break
+                out.write(chunk)
+
+        try:
+            tweets, handle = parse_archive(tmp_path, account)
+        except Exception as e:
+            raise HTTPException(422, str(e))
+    finally:
+        try:
+            os.unlink(tmp_path)
+        except OSError:
+            pass
 
     if not tweets:
         raise HTTPException(422, "لم يتم العثور على تغريدات في الأرشيف")
