@@ -28,3 +28,9 @@ class AIInsightRequest(BaseModel):
     account: str
     anthropic_key: str
     force_refresh: bool = False
+
+
+class ChatRequest(BaseModel):
+    account: str
+    anthropic_key: str
+    message: str

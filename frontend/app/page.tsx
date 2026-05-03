@@ -2,10 +2,70 @@
 
 import { useState, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { Upload, Twitter, Loader2, CheckCircle, AlertCircle, ChevronLeft } from "lucide-react";
+import {
+  Upload, Loader2, CheckCircle, AlertCircle,
+  ChevronLeft, Shield, Zap, BookOpen, Lock,
+  BarChart2, CalendarDays, TrendingUp, MessageSquare,
+} from "lucide-react";
 import { uploadArchive, getAccounts, Account } from "@/lib/api";
 
 type Status = "idle" | "loading" | "success" | "error";
+type Step = 1 | 2 | 3;
+
+const DEMO_CARDS = [
+  { text: "الثلاثاء ٩ م — وقتك الذهبي للنشر", tag: "💡 نمط خفي", eng: "3.2K" },
+  { text: "تغريدات القصة الشخصية تجذب ٣× أكثر تفاعلاً", tag: "⚡ صيغة الفائزين", eng: "6.1K" },
+  { text: "٤٠٪ من محتواك لا يصل لجمهورك المستهدف", tag: "📊 قمع المحتوى", eng: "1.8K" },
+];
+
+const FEATURES = [
+  {
+    icon: <TrendingUp size={20} />,
+    title: "قمع المحتوى",
+    desc: "TOFU / MOFU / BOFU — اكتشف أين تتسرب فرص التحويل وكيف تسدّها",
+    color: "#3b82f6",
+    tag: "محتوى ذكي",
+  },
+  {
+    icon: <Zap size={20} />,
+    title: "صيغة الفائزين",
+    desc: "القالب القابل للنسخ من أعلى تغريداتك أداءً — مع أمثلة جاهزة",
+    color: "#f59e0b",
+    tag: "أنماط خفية",
+  },
+  {
+    icon: <BarChart2 size={20} />,
+    title: "مصفوفة المواضيع",
+    desc: "منجم / ذهب / مهدور / ميت — وجّه وقتك للمكان الصحيح",
+    color: "#8b5cf6",
+    tag: "ROI للمحتوى",
+  },
+  {
+    icon: <CalendarDays size={20} />,
+    title: "خطة الأسبوع",
+    desc: "٧ تغريدات جاهزة للنشر بأسلوبك أنت — بناءً على ما نجح فعلاً",
+    color: "#22c55e",
+    tag: "جاهز للنشر",
+  },
+];
+
+const PRIVACY = [
+  {
+    icon: "🔑",
+    title: "مفتاح API في متصفحك فقط",
+    desc: "مفتاح Anthropic يُحفظ في localStorage في متصفحك — لا يصل إليه أحد غيرك",
+  },
+  {
+    icon: "🤖",
+    title: "تحليل عبر مفتاحك أنت",
+    desc: "يُرسل التحليل لـ Anthropic عبر مفتاحك الشخصي — لا مفتاح مشترك، لا اختراق",
+  },
+  {
+    icon: "🚫",
+    title: "لا مشاركة تجارية",
+    desc: "بياناتك لا تُشارك مع أي طرف تجاري — تُستخدم فقط لأغراض التحليل",
+  },
+];
 
 export default function Home() {
   const router = useRouter();
@@ -13,19 +73,35 @@ export default function Home() {
   const [msg, setMsg] = useState("");
   const [accounts, setAccounts] = useState<Account[]>([]);
   const fileRef = useRef<HTMLInputElement>(null);
+  const uploadRef = useRef<HTMLDivElement>(null);
 
   const [archiveHandle, setArchiveHandle] = useState("");
   const [archiveFile, setArchiveFile] = useState<File | null>(null);
+  const [step, setStep] = useState<Step>(1);
+  const [dragOver, setDragOver] = useState(false);
 
   useEffect(() => {
     getAccounts().then(setAccounts).catch(() => {});
   }, []);
 
+  function scrollToUpload() {
+    uploadRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
+  }
+
+  function nextStep() {
+    if (step === 1 && !archiveHandle.trim()) return;
+    if (step === 2 && !archiveFile) return;
+    setStep((s) => Math.min(s + 1, 3) as Step);
+  }
+
   async function handleArchive() {
     if (!archiveFile || !archiveHandle.trim()) {
-      setMsg("أدخل اسم الحساب وارفع ملف ZIP"); setStatus("error"); return;
+      setMsg("أدخل اسم الحساب وارفع ملف ZIP");
+      setStatus("error");
+      return;
     }
-    setStatus("loading"); setMsg("جاري معالجة الأرشيف...");
+    setStatus("loading");
+    setMsg("جاري معالجة الأرشيف...");
     try {
       const res = await uploadArchive(archiveFile, archiveHandle.trim());
       setMsg(`✓ تم استيراد ${res.count.toLocaleString()} تغريدة`);
@@ -33,114 +109,469 @@ export default function Home() {
       setTimeout(() => router.push(`/dashboard/${res.account}`), 1200);
     } catch (e: unknown) {
       const err = e as { response?: { data?: { detail?: string } } };
-      setMsg(err?.response?.data?.detail || "خطأ في معالجة الملف"); setStatus("error");
+      setMsg(err?.response?.data?.detail || "خطأ في معالجة الملف");
+      setStatus("error");
     }
   }
 
   return (
-    <main className="min-h-screen flex flex-col items-center justify-center p-6">
-      <div className="text-center mb-10 max-w-xl">
-        <div className="inline-flex items-center gap-2 badge badge-blue mb-4">
-          <Twitter size={14} /> محلل تغريدات X
-        </div>
-        <h1 className="text-4xl font-extrabold mb-3 leading-tight">
-          اكتشف أنماطاً خفية<br />
-          <span className="text-brand-500">في تغريداتك بالذكاء الاصطناعي</span>
-        </h1>
-        <p className="text-slate-400 text-lg">
-          ارفع أرشيف X وحلل آلاف التغريدات بـ Claude
-        </p>
-      </div>
+    <div className="min-h-screen">
 
-      {accounts.length > 0 && (
-        <div className="w-full max-w-lg mb-6">
-          <p className="text-slate-400 text-sm mb-2">حسابات محللة مسبقاً:</p>
-          <div className="flex flex-wrap gap-2">
-            {accounts.map((a) => (
-              <button
-                key={a.handle}
-                onClick={() => router.push(`/dashboard/${a.handle}`)}
-                className="badge badge-blue hover:opacity-80 transition cursor-pointer"
-              >
-                @{a.handle}
-                <span className="opacity-60 mr-1">({a.tweet_count.toLocaleString()})</span>
-                <ChevronLeft size={12} />
+      {/* ── Nav ── */}
+      <nav className="fixed top-0 w-full z-50 glass" style={{ borderRadius: 0, borderLeft: 0, borderRight: 0, borderTop: 0 }}>
+        <div className="max-w-6xl mx-auto px-6 py-4 flex items-center justify-between">
+          <Logo />
+          <div className="flex items-center gap-3">
+            <span className="badge badge-green text-xs hidden sm:inline-flex gap-1">
+              <Lock size={10} /> بياناتك محمية
+            </span>
+            {accounts.length > 0 && (
+              <button onClick={scrollToUpload} className="badge badge-violet cursor-pointer hover:opacity-80 transition">
+                تحليل جديد
               </button>
+            )}
+          </div>
+        </div>
+      </nav>
+
+      {/* ── Hero ── */}
+      <section className="relative min-h-screen flex flex-col items-center justify-center px-6 pt-24 pb-16 overflow-hidden">
+        {/* Background orbs */}
+        <div
+          className="absolute top-1/4 right-1/3 w-[500px] h-[500px] rounded-full pointer-events-none animate-pulse-orb"
+          style={{ background: "radial-gradient(circle, rgba(139,92,246,0.18) 0%, transparent 70%)" }}
+        />
+        <div
+          className="absolute bottom-1/4 left-1/4 w-80 h-80 rounded-full pointer-events-none"
+          style={{ background: "radial-gradient(circle, rgba(245,158,11,0.10) 0%, transparent 70%)" }}
+        />
+
+        {/* Floating demo cards */}
+        <div className="absolute top-32 right-6 w-56 animate-float hidden lg:block" style={{ opacity: 0.55 }}>
+          <DemoCard card={DEMO_CARDS[0]} />
+        </div>
+        <div className="absolute top-48 left-6 w-60 animate-float2 hidden lg:block" style={{ opacity: 0.45 }}>
+          <DemoCard card={DEMO_CARDS[1]} />
+        </div>
+        <div className="absolute bottom-28 right-16 w-52 animate-float3 hidden xl:block" style={{ opacity: 0.40 }}>
+          <DemoCard card={DEMO_CARDS[2]} />
+        </div>
+
+        {/* Hero content */}
+        <div className="text-center max-w-2xl relative z-10">
+          <div className="inline-flex items-center gap-2 badge badge-violet mb-6 py-1.5 px-4 text-sm animate-fade-in-up">
+            <Zap size={13} /> مدعوم بـ Claude claude-sonnet-4-6
+          </div>
+          <h1 className="text-5xl sm:text-6xl md:text-7xl font-black mb-4 leading-tight animate-fade-in-up delay-100">
+            <span className="gradient-text">بين السطور</span>
+          </h1>
+          <p className="text-xl sm:text-2xl text-slate-300 mb-2 leading-relaxed animate-fade-in-up delay-200">
+            ما لا تراه في تغريداتك
+          </p>
+          <p className="text-slate-400 mb-3 animate-fade-in-up delay-200">
+            يراه الذكاء الاصطناعي
+          </p>
+          <p className="text-slate-500 text-sm mb-10 max-w-lg mx-auto animate-fade-in-up delay-300">
+            ارفع أرشيف X واكتشف الأنماط الخفية — قرارات واضحة لا وصف فارغ
+          </p>
+          <div className="animate-fade-in-up delay-400">
+            <button
+              onClick={scrollToUpload}
+              className="inline-flex items-center gap-2 text-white font-bold text-lg px-8 py-4 rounded-2xl transition shadow-lg"
+              style={{
+                background: "linear-gradient(135deg, #7c3aed, #6d28d9)",
+                boxShadow: "0 8px 32px rgba(109,40,217,0.35)",
+              }}
+              onMouseEnter={(e) => (e.currentTarget.style.opacity = "0.9")}
+              onMouseLeave={(e) => (e.currentTarget.style.opacity = "1")}
+            >
+              ابدأ التحليل مجاناً
+            </button>
+          </div>
+        </div>
+
+        {/* Scroll hint */}
+        <div className="absolute bottom-8 left-1/2 -translate-x-1/2 text-slate-700 animate-bounce">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+            <path d="M12 5v14M5 12l7 7 7-7" />
+          </svg>
+        </div>
+      </section>
+
+      {/* ── Features ── */}
+      <section className="py-20 px-6">
+        <div className="max-w-5xl mx-auto">
+          <h2 className="text-3xl font-extrabold text-center mb-2">
+            ٤ رؤى تحرك قراراتك
+          </h2>
+          <p className="text-slate-400 text-center mb-12 text-sm">
+            ليس مجرد أرقام — بل إجابات لأسئلة تجارية حقيقية
+          </p>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            {FEATURES.map((f, i) => (
+              <div
+                key={i}
+                className="card group hover:scale-[1.02] transition-transform cursor-default"
+                style={{ borderColor: f.color + "28" }}
+              >
+                <div
+                  className="w-10 h-10 rounded-xl flex items-center justify-center mb-3 transition-colors"
+                  style={{ background: f.color + "18", color: f.color }}
+                >
+                  {f.icon}
+                </div>
+                <h3 className="font-bold mb-1.5">{f.title}</h3>
+                <p className="text-xs text-slate-400 leading-relaxed mb-3">{f.desc}</p>
+                <span
+                  className="text-xs font-semibold px-2 py-0.5 rounded-full"
+                  style={{ background: f.color + "18", color: f.color }}
+                >
+                  {f.tag}
+                </span>
+              </div>
             ))}
           </div>
         </div>
-      )}
+      </section>
 
-      <div className="card w-full max-w-lg">
-        <h2 className="text-xl font-bold mb-4">رفع أرشيف X</h2>
-
-        <label className="block text-sm text-slate-400 mb-1">اسم الحساب (بدون @)</label>
-        <input
-          value={archiveHandle}
-          onChange={(e) => setArchiveHandle(e.target.value)}
-          placeholder="مثال: elonmusk"
-          className="input mb-4"
-        />
-
-        <label className="block text-sm text-slate-400 mb-1">ملف الأرشيف (.zip)</label>
-        <div
-          onClick={() => fileRef.current?.click()}
-          className="border-2 border-dashed border-slate-600 rounded-xl p-8 text-center cursor-pointer hover:border-brand-500 transition mb-4"
-        >
-          {archiveFile ? (
-            <p className="text-green-400 font-semibold">{archiveFile.name}</p>
-          ) : (
-            <>
-              <Upload size={32} className="text-slate-500 mx-auto mb-2" />
-              <p className="text-slate-400">اسحب ملف ZIP هنا أو انقر للاختيار</p>
-              <p className="text-slate-500 text-xs mt-1">ارفع الملف كما هو — لا تفك الضغط</p>
-            </>
-          )}
-          <input
-            ref={fileRef}
-            type="file"
-            accept=".zip"
-            className="hidden"
-            onChange={(e) => setArchiveFile(e.target.files?.[0] ?? null)}
-          />
+      {/* ── Chat teaser ── */}
+      <section className="py-12 px-6">
+        <div className="max-w-2xl mx-auto glass text-center py-8 px-6" style={{ borderColor: "rgba(139,92,246,0.2)" }}>
+          <MessageSquare size={32} className="mx-auto mb-3" style={{ color: "#a78bfa" }} />
+          <h3 className="text-xl font-bold mb-2">واسأل بياناتك بحرية</h3>
+          <p className="text-slate-400 text-sm">
+            بعد التحليل يمكنك سؤال الذكاء الاصطناعي أي سؤال — "ما المواضيع الأنجح؟"، "متى أنشر؟"، "ما أسلوبي المميز؟"
+          </p>
         </div>
+      </section>
 
-        <HowToArchive />
-
-        <button
-          onClick={handleArchive}
-          disabled={status === "loading" || status === "success"}
-          className="w-full py-3 rounded-xl bg-brand-600 hover:bg-brand-700 text-white font-bold text-lg transition disabled:opacity-50 flex items-center justify-center gap-2"
-        >
-          {status === "loading" && <Loader2 size={18} className="animate-spin" />}
-          ابدأ التحليل
-        </button>
-
-        {msg && (
-          <div className={`flex items-center gap-2 mt-3 text-sm ${
-            status === "error"   ? "text-red-400" :
-            status === "success" ? "text-green-400" : "text-slate-400"
-          }`}>
-            {status === "error"   && <AlertCircle size={14} />}
-            {status === "success" && <CheckCircle size={14} />}
-            {msg}
+      {/* ── Privacy ── */}
+      <section className="py-16 px-6">
+        <div className="max-w-3xl mx-auto">
+          <div className="glass py-8 px-6 text-center" style={{ borderColor: "rgba(74,222,128,0.15)" }}>
+            <Shield size={34} className="mx-auto mb-3" style={{ color: "#4ade80" }} />
+            <h2 className="text-2xl font-bold mb-1">بياناتك تبقى بين يديك</h2>
+            <p className="text-slate-400 text-sm mb-6">نأخذ الخصوصية بجدية</p>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+              {PRIVACY.map((p, i) => (
+                <div key={i} className="rounded-xl p-4 text-right" style={{ background: "rgba(30,44,85,0.5)" }}>
+                  <p className="text-2xl mb-2">{p.icon}</p>
+                  <p className="font-semibold text-sm mb-1">{p.title}</p>
+                  <p className="text-xs text-slate-400 leading-relaxed">{p.desc}</p>
+                </div>
+              ))}
+            </div>
           </div>
-        )}
+        </div>
+      </section>
+
+      {/* ── Upload / Stepper ── */}
+      <section ref={uploadRef} className="py-16 px-6" id="upload">
+        <div className="max-w-lg mx-auto">
+          {accounts.length > 0 && (
+            <div className="mb-8 text-center">
+              <p className="text-slate-400 text-sm mb-3">حسابات محللة مسبقاً</p>
+              <div className="flex flex-wrap justify-center gap-2">
+                {accounts.map((a) => (
+                  <button
+                    key={a.handle}
+                    onClick={() => router.push(`/dashboard/${a.handle}`)}
+                    className="badge badge-violet hover:opacity-80 transition cursor-pointer"
+                  >
+                    @{a.handle}
+                    <span className="opacity-60 mr-1">({a.tweet_count.toLocaleString()})</span>
+                    <ChevronLeft size={12} />
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+
+          <div className="card" style={{ borderColor: "rgba(139,92,246,0.2)" }}>
+            {/* Card header */}
+            <div className="flex items-center gap-2 mb-6">
+              <Logo small />
+            </div>
+
+            {/* Stepper indicator */}
+            <Stepper current={step} />
+
+            {/* Step content */}
+            <div className="mt-6">
+
+              {/* Step 1 — Account name */}
+              {step === 1 && (
+                <div className="animate-fade-in-up">
+                  <label className="block text-sm font-semibold mb-2 text-slate-300">
+                    اسم حساب X (بدون @)
+                  </label>
+                  <input
+                    value={archiveHandle}
+                    onChange={(e) => setArchiveHandle(e.target.value)}
+                    onKeyDown={(e) => e.key === "Enter" && nextStep()}
+                    placeholder="مثال: elonmusk"
+                    className="input mb-4"
+                    autoFocus
+                  />
+                  <button
+                    onClick={nextStep}
+                    disabled={!archiveHandle.trim()}
+                    className="w-full py-3 rounded-xl font-bold transition disabled:opacity-40 text-white"
+                    style={{ background: "linear-gradient(135deg, #7c3aed, #6d28d9)" }}
+                  >
+                    التالي ←
+                  </button>
+                </div>
+              )}
+
+              {/* Step 2 — File upload */}
+              {step === 2 && (
+                <div className="animate-fade-in-up">
+                  <div
+                    onClick={() => fileRef.current?.click()}
+                    onDragOver={(e) => { e.preventDefault(); setDragOver(true); }}
+                    onDragLeave={() => setDragOver(false)}
+                    onDrop={(e) => {
+                      e.preventDefault();
+                      setDragOver(false);
+                      const f = e.dataTransfer.files?.[0];
+                      if (f?.name.endsWith(".zip")) setArchiveFile(f);
+                    }}
+                    className="border-2 border-dashed rounded-xl p-8 text-center cursor-pointer transition mb-4"
+                    style={{
+                      borderColor: archiveFile ? "#4ade80" : dragOver ? "#8b5cf6" : "#1e2c55",
+                      background: dragOver ? "rgba(139,92,246,0.05)" : "transparent",
+                    }}
+                  >
+                    {archiveFile ? (
+                      <div style={{ color: "#4ade80" }}>
+                        <CheckCircle size={28} className="mx-auto mb-2" />
+                        <p className="font-semibold text-sm">{archiveFile.name}</p>
+                        <p className="text-xs mt-1 text-slate-400">
+                          {(archiveFile.size / 1024 / 1024).toFixed(1)} MB
+                        </p>
+                      </div>
+                    ) : (
+                      <>
+                        <Upload size={28} className="text-slate-500 mx-auto mb-2" />
+                        <p className="text-slate-400 text-sm">اسحب ملف ZIP هنا أو انقر للاختيار</p>
+                        <p className="text-slate-600 text-xs mt-1">بدون فك الضغط</p>
+                      </>
+                    )}
+                    <input
+                      ref={fileRef}
+                      type="file"
+                      accept=".zip"
+                      className="hidden"
+                      onChange={(e) => setArchiveFile(e.target.files?.[0] ?? null)}
+                    />
+                  </div>
+
+                  <HowToArchive />
+
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => setStep(1)}
+                      className="flex-1 py-2.5 rounded-xl border text-slate-400 hover:text-white text-sm font-semibold transition"
+                      style={{ borderColor: "#1e2c55" }}
+                    >
+                      → رجوع
+                    </button>
+                    <button
+                      onClick={nextStep}
+                      disabled={!archiveFile}
+                      className="flex-[2] py-2.5 px-6 rounded-xl font-bold text-sm transition disabled:opacity-40 text-white"
+                      style={{ background: "linear-gradient(135deg, #7c3aed, #6d28d9)" }}
+                    >
+                      التالي ←
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {/* Step 3 — Confirm & analyze */}
+              {step === 3 && (
+                <div className="animate-fade-in-up">
+                  <div className="rounded-xl p-4 mb-5 text-sm" style={{ background: "rgba(30,44,85,0.5)" }}>
+                    <div className="flex justify-between mb-2.5">
+                      <span className="text-slate-400">الحساب</span>
+                      <span className="font-bold text-brand-400">@{archiveHandle}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-slate-400">الملف</span>
+                      <span className="font-semibold text-xs truncate max-w-44 text-slate-200">
+                        {archiveFile?.name}
+                      </span>
+                    </div>
+                    {archiveFile && (
+                      <div className="flex justify-between mt-2.5">
+                        <span className="text-slate-400">الحجم</span>
+                        <span className="text-xs text-slate-300">
+                          {(archiveFile.size / 1024 / 1024).toFixed(1)} MB
+                        </span>
+                      </div>
+                    )}
+                  </div>
+
+                  <button
+                    onClick={handleArchive}
+                    disabled={status === "loading" || status === "success"}
+                    className="w-full py-3.5 rounded-xl font-bold text-lg transition disabled:opacity-50 flex items-center justify-center gap-2 text-white"
+                    style={{
+                      background: "linear-gradient(135deg, #7c3aed, #6d28d9)",
+                      boxShadow: "0 8px 32px rgba(109,40,217,0.3)",
+                    }}
+                  >
+                    {status === "loading" && <Loader2 size={20} className="animate-spin" />}
+                    {status === "success" ? "تم! جاري التوجيه..." : "ابدأ التحليل"}
+                  </button>
+
+                  <button
+                    onClick={() => setStep(2)}
+                    className="mt-3 w-full text-slate-500 hover:text-slate-300 text-xs transition"
+                  >
+                    → رجوع
+                  </button>
+
+                  {msg && (
+                    <div className={`flex items-center justify-center gap-2 mt-3 text-sm ${
+                      status === "error" ? "text-red-400" : status === "success" ? "text-green-400" : "text-slate-400"
+                    }`}>
+                      {status === "error" && <AlertCircle size={14} />}
+                      {status === "success" && <CheckCircle size={14} />}
+                      {msg}
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* ── Footer ── */}
+      <footer className="py-10 px-6 text-center border-t" style={{ borderColor: "#1e2c55" }}>
+        <div className="flex justify-center mb-2">
+          <Logo small />
+        </div>
+        <p className="text-slate-600 text-xs mt-1">مدعوم بـ Claude AI — بياناتك خاصة</p>
+      </footer>
+    </div>
+  );
+}
+
+/* ── Sub-components ── */
+
+function Logo({ small }: { small?: boolean }) {
+  return (
+    <div className="flex items-center gap-2">
+      <div
+        className="rounded-lg flex items-center justify-center flex-shrink-0"
+        style={{
+          width: small ? 28 : 34,
+          height: small ? 28 : 34,
+          background: "linear-gradient(135deg, #8b5cf6, #6d28d9)",
+        }}
+      >
+        <BookOpen size={small ? 13 : 16} className="text-white" />
       </div>
-    </main>
+      <span
+        className="font-extrabold gradient-text"
+        style={{ fontSize: small ? "1rem" : "1.15rem" }}
+      >
+        بين السطور
+      </span>
+    </div>
+  );
+}
+
+function DemoCard({ card }: { card: { text: string; tag: string; eng: string } }) {
+  return (
+    <div
+      className="rounded-2xl p-3 text-xs"
+      style={{
+        background: "rgba(13,18,40,0.85)",
+        border: "1px solid rgba(139,92,246,0.2)",
+        backdropFilter: "blur(8px)",
+      }}
+    >
+      <div className="flex items-center justify-between mb-2">
+        <span
+          className="px-2 py-0.5 rounded-full text-[10px] font-semibold"
+          style={{ background: "rgba(139,92,246,0.2)", color: "#a78bfa" }}
+        >
+          {card.tag}
+        </span>
+        <span style={{ color: "#f59e0b" }} className="font-bold">{card.eng}</span>
+      </div>
+      <p className="text-slate-300 leading-relaxed">{card.text}</p>
+    </div>
+  );
+}
+
+function Stepper({ current }: { current: Step }) {
+  const steps = [
+    { n: 1, label: "الحساب" },
+    { n: 2, label: "الملف" },
+    { n: 3, label: "التحليل" },
+  ];
+  return (
+    <div className="flex items-center gap-0">
+      {steps.map((s, i) => (
+        <div key={s.n} className="flex items-center flex-1">
+          <div className="flex flex-col items-center">
+            <div
+              className="w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold transition-all"
+              style={{
+                background: s.n < current ? "#4ade80" : s.n === current ? "linear-gradient(135deg, #8b5cf6, #6d28d9)" : "#141c38",
+                color: s.n <= current ? "white" : "#4a5568",
+                border: s.n > current ? "1px solid #1e2c55" : "none",
+              }}
+            >
+              {s.n < current ? "✓" : s.n}
+            </div>
+            <span
+              className="text-xs mt-1 font-medium"
+              style={{ color: s.n === current ? "#a78bfa" : s.n < current ? "#4ade80" : "#4a5568" }}
+            >
+              {s.label}
+            </span>
+          </div>
+          {i < steps.length - 1 && (
+            <div
+              className="flex-1 h-0.5 mb-5 mx-1 transition-all"
+              style={{ background: s.n < current ? "#4ade8060" : "#1e2c55" }}
+            />
+          )}
+        </div>
+      ))}
+    </div>
   );
 }
 
 function HowToArchive() {
+  const [open, setOpen] = useState(false);
   return (
-    <div className="bg-slate-800/50 rounded-xl p-4 mb-4 text-sm text-slate-400">
-      <p className="font-semibold text-slate-300 mb-2">كيف تنزّل أرشيفك؟</p>
-      <ol className="list-decimal list-inside space-y-1">
-        <li>افتح X → الإعدادات → حسابك → نزّل أرشيفاً من بياناتك</li>
-        <li>أدخل كلمة المرور وانتظر البريد (24 ساعة عادةً)</li>
-        <li>نزّل ملف ZIP من الرابط في البريد</li>
-        <li>ارفعه هنا مباشرةً <span className="text-amber-400">بدون فك الضغط</span></li>
-      </ol>
+    <div className="mb-4 rounded-xl overflow-hidden" style={{ border: "1px solid #1e2c55" }}>
+      <button
+        onClick={() => setOpen(!open)}
+        className="w-full flex items-center justify-between px-4 py-3 text-sm font-semibold text-slate-300 hover:text-white transition"
+        style={{ background: "rgba(20,28,56,0.6)" }}
+      >
+        <span>كيف تنزّل أرشيفك من X؟</span>
+        <span className="text-slate-500 text-xs">{open ? "▲" : "▼"}</span>
+      </button>
+      {open && (
+        <div className="px-4 pb-4 pt-2 text-sm text-slate-400" style={{ background: "rgba(13,18,40,0.5)" }}>
+          <ol className="list-decimal list-inside space-y-2 leading-relaxed">
+            <li>افتح X (تويتر) وانتقل إلى <span className="text-slate-300 font-medium">الإعدادات</span></li>
+            <li>اختر <span className="text-slate-300 font-medium">حسابك</span> ← <span className="text-slate-300 font-medium">نزّل أرشيفاً من بياناتك</span></li>
+            <li>أدخل كلمة مرورك وانتظر رسالة البريد الإلكتروني <span className="text-slate-500 text-xs">(قد تصل خلال ٢٤ ساعة)</span></li>
+            <li>افتح الرسالة ونزّل ملف ZIP</li>
+            <li>ارفعه هنا مباشرةً <span className="text-amber-400 font-semibold">بدون فك الضغط</span></li>
+          </ol>
+        </div>
+      )}
     </div>
   );
 }

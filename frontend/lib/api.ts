@@ -36,6 +36,19 @@ export async function getAnalytics(account: string) {
   return data;
 }
 
+export async function chatWithAI(
+  account: string,
+  message: string,
+  anthropicKey: string
+): Promise<{ answer: string }> {
+  const { data } = await api.post<{ answer: string }>("/ai/chat", {
+    account,
+    anthropic_key: anthropicKey,
+    message,
+  });
+  return data;
+}
+
 export async function getAIInsight(
   account: string,
   kind: string,

@@ -199,3 +199,20 @@ KIND_MAP = {
     "topic_roi":      topic_roi,
     "action_plan":    action_plan,
 }
+
+
+# ── 5. Free-form Chat ─────────────────────────────────────────────────────────
+
+def chat(tweets: list[dict], message: str, api_key: str) -> dict:
+    client = anthropic.Anthropic(api_key=api_key)
+    block = _fmt(_sample(tweets, 200))
+    response = client.messages.create(
+        model=_MODEL,
+        max_tokens=2000,
+        system=[
+            {"type": "text", "text": SYSTEM_BASE, "cache_control": {"type": "ephemeral"}},
+            {"type": "text", "text": f"<tweets>\n{block}\n</tweets>", "cache_control": {"type": "ephemeral"}},
+        ],
+        messages=[{"role": "user", "content": message}],
+    )
+    return {"answer": response.content[0].text.strip()}

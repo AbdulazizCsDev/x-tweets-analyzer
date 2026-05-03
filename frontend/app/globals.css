@@ -1,17 +1,18 @@
-@import url('https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700;800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700;800;900&display=swap');
 
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 :root {
-  --bg: #0a0f1e;
-  --surface: #0f172a;
-  --surface2: #1e293b;
-  --border: #334155;
+  --bg: #070b18;
+  --surface: #0d1228;
+  --surface2: #141c38;
+  --border: #1e2c55;
   --text: #f1f5f9;
   --muted: #94a3b8;
-  --brand: #3b82f6;
+  --brand: #8b5cf6;
+  --gold: #f59e0b;
 }
 
 * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -24,14 +25,23 @@ html, body {
   min-height: 100vh;
 }
 
-::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar { width: 5px; height: 5px; }
 ::-webkit-scrollbar-track { background: var(--surface); }
 ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
 
 .card {
   background: var(--surface);
   border: 1px solid var(--border);
-  border-radius: 12px;
+  border-radius: 16px;
+  padding: 1.25rem;
+}
+
+.glass {
+  background: rgba(13, 18, 40, 0.65);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(139, 92, 246, 0.12);
+  border-radius: 16px;
   padding: 1.25rem;
 }
 
@@ -39,27 +49,81 @@ html, body {
   width: 100%;
   background: var(--surface2);
   border: 1px solid var(--border);
-  border-radius: 8px;
+  border-radius: 10px;
   padding: 10px 14px;
   color: var(--text);
   font-family: 'Cairo', sans-serif;
   font-size: 0.95rem;
   outline: none;
-  transition: border-color 0.2s;
+  transition: border-color 0.2s, box-shadow 0.2s;
 }
-.input:focus { border-color: var(--brand); }
+.input:focus {
+  border-color: var(--brand);
+  box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.12);
+}
 
 .badge {
   display: inline-flex;
   align-items: center;
   gap: 4px;
-  padding: 2px 10px;
+  padding: 3px 12px;
   border-radius: 999px;
   font-size: 0.75rem;
   font-weight: 600;
 }
+.badge-blue   { background: #1e3a8a25; color: #60a5fa; border: 1px solid #1e40af40; }
+.badge-green  { background: #14532d25; color: #4ade80; border: 1px solid #15803d40; }
+.badge-yellow { background: #78350f25; color: #fbbf24; border: 1px solid #92400e40; }
+.badge-red    { background: #7f1d1d25; color: #f87171; border: 1px solid #991b1b40; }
+.badge-violet { background: #4c1d9525; color: #a78bfa; border: 1px solid #6d28d940; }
 
-.badge-blue   { background: #1e3a8a30; color: #60a5fa; border: 1px solid #1e40af50; }
-.badge-green  { background: #14532d30; color: #4ade80; border: 1px solid #15803d50; }
-.badge-yellow { background: #78350f30; color: #fbbf24; border: 1px solid #92400e50; }
-.badge-red    { background: #7f1d1d30; color: #f87171; border: 1px solid #991b1b50; }
+.gradient-text {
+  background: linear-gradient(135deg, #a78bfa 0%, #818cf8 45%, #f59e0b 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* ── Animations ── */
+
+@keyframes float {
+  0%, 100% { transform: translateY(0px) rotate(0deg); }
+  50%       { transform: translateY(-10px) rotate(0.4deg); }
+}
+@keyframes float2 {
+  0%, 100% { transform: translateY(0px) rotate(0deg); }
+  50%       { transform: translateY(-14px) rotate(-0.4deg); }
+}
+@keyframes float3 {
+  0%, 100% { transform: translateY(0px); }
+  50%       { transform: translateY(-7px); }
+}
+@keyframes pulse-orb {
+  0%, 100% { opacity: 0.35; transform: scale(1); }
+  50%       { opacity: 0.55; transform: scale(1.05); }
+}
+@keyframes fade-in-up {
+  from { opacity: 0; transform: translateY(20px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+@keyframes fade-in {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+@keyframes slide-in-right {
+  from { opacity: 0; transform: translateX(16px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+
+.animate-float  { animation: float  5s ease-in-out infinite; }
+.animate-float2 { animation: float2 6.5s ease-in-out infinite 1.5s; }
+.animate-float3 { animation: float3 4.5s ease-in-out infinite 3s; }
+.animate-pulse-orb { animation: pulse-orb 4s ease-in-out infinite; }
+.animate-fade-in-up { animation: fade-in-up 0.65s ease-out forwards; }
+.animate-fade-in { animation: fade-in 0.5s ease-out forwards; }
+.animate-slide-in-right { animation: slide-in-right 0.4s ease-out forwards; }
+
+.delay-100 { animation-delay: 0.1s; opacity: 0; }
+.delay-200 { animation-delay: 0.2s; opacity: 0; }
+.delay-300 { animation-delay: 0.3s; opacity: 0; }
+.delay-400 { animation-delay: 0.4s; opacity: 0; }

@@ -2,7 +2,7 @@
 
 import { useState, useEffect, use } from "react";
 import { useRouter } from "next/navigation";
-import { ArrowRight, Sparkles, BarChart3 } from "lucide-react";
+import { ArrowRight, Sparkles, BarChart3, BookOpen } from "lucide-react";
 import { getAnalytics } from "@/lib/api";
 import StatsRow from "@/components/StatsRow";
 import BasicTab from "@/components/BasicTab";
@@ -73,18 +73,25 @@ export default function Dashboard({ params }: { params: Promise<{ account: strin
   return (
     <main className="min-h-screen pb-12">
       {/* Header */}
-      <header className="sticky top-0 z-30 bg-surface-900/80 backdrop-blur border-b border-slate-800">
-        <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
-          <div className="flex items-center gap-3">
+      <header className="sticky top-0 z-30 border-b" style={{ background: "rgba(7,11,24,0.85)", backdropFilter: "blur(16px)", borderColor: "#1e2c55" }}>
+        <div className="max-w-7xl mx-auto px-6 py-3.5 flex items-center justify-between">
+          <div className="flex items-center gap-4">
             <button
               onClick={() => router.push("/")}
-              className="text-slate-400 hover:text-white"
+              className="text-slate-400 hover:text-white transition flex items-center gap-1.5 text-sm"
             >
-              <ArrowRight size={20} />
+              <ArrowRight size={18} />
             </button>
+            {/* Logo */}
+            <div className="flex items-center gap-2 border-r border-slate-800 pl-4 pr-0">
+              <div className="w-6 h-6 rounded-md flex items-center justify-center" style={{ background: "linear-gradient(135deg, #8b5cf6, #6d28d9)" }}>
+                <BookOpen size={12} className="text-white" />
+              </div>
+              <span className="font-extrabold text-sm gradient-text hidden sm:block">بين السطور</span>
+            </div>
             <div>
-              <h1 className="text-xl font-bold">@{account}</h1>
-              <p className="text-xs text-slate-400">
+              <h1 className="text-base font-bold leading-tight">@{account}</h1>
+              <p className="text-xs text-slate-500">
                 {(summary.total_tweets as number).toLocaleString()} تغريدة محللة
               </p>
             </div>
@@ -96,9 +103,9 @@ export default function Dashboard({ params }: { params: Promise<{ account: strin
         </div>
 
         {/* Tabs */}
-        <div className="max-w-7xl mx-auto px-6 flex gap-1">
-          <TabBtn active={tab === "basic"} onClick={() => setTab("basic")} icon={<BarChart3 size={16} />} label="التحليلات" />
-          <TabBtn active={tab === "ai"} onClick={() => setTab("ai")} icon={<Sparkles size={16} />} label="رؤى AI" />
+        <div className="max-w-7xl mx-auto px-6 flex gap-0">
+          <TabBtn active={tab === "basic"} onClick={() => setTab("basic")} icon={<BarChart3 size={15} />} label="التحليلات" />
+          <TabBtn active={tab === "ai"} onClick={() => setTab("ai")} icon={<Sparkles size={15} />} label="رؤى AI" />
         </div>
       </header>
 
@@ -120,8 +127,8 @@ function TabBtn({ active, onClick, icon, label }: {
   return (
     <button
       onClick={onClick}
-      className={`flex items-center gap-2 px-5 py-3 font-semibold border-b-2 transition ${
-        active ? "border-brand-500 text-brand-400" : "border-transparent text-slate-400 hover:text-white"
+      className={`flex items-center gap-2 px-5 py-3 font-semibold border-b-2 transition text-sm ${
+        active ? "border-brand-500 text-brand-400" : "border-transparent text-slate-500 hover:text-slate-300"
       }`}
     >
       {icon} {label}
@@ -140,7 +147,7 @@ function KeyInput({ value, onChange }: { value: string; onChange: (v: string) =>
         {value ? "✓ Anthropic" : "⚠ أدخل مفتاح Anthropic"}
       </button>
       {open && (
-        <div className="absolute left-0 top-10 card w-80 z-40">
+        <div className="absolute left-0 top-10 card w-80 z-40" style={{ borderColor: "rgba(139,92,246,0.2)" }}>
           <p className="text-sm font-semibold mb-2">مفتاح Anthropic API</p>
           <p className="text-xs text-slate-400 mb-3">
             مطلوب لتشغيل تحليلات الذكاء الاصطناعي. يُحفظ محلياً في متصفحك فقط.

@@ -1,15 +1,16 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import {
   Sparkles, TrendingUp, Zap, BarChart2, CalendarDays,
   Loader2, RefreshCw, Copy, CheckCheck, TrendingDown, Minus,
+  MessageSquare, SendHorizontal, BookOpen,
 } from "lucide-react";
-import { getAIInsight } from "@/lib/api";
+import { getAIInsight, chatWithAI } from "@/lib/api";
 
 interface InsightConfig {
   kind: string; title: string; desc: string;
-  icon: React.ReactNode; color: string;
+  icon: React.ReactNode; color: string; borderHex: string;
 }
 
 const INSIGHTS: InsightConfig[] = [
@@ -17,56 +18,78 @@ const INSIGHTS: InsightConfig[] = [
     kind: "content_funnel",
     title: "قمع المحتوى",
     desc: "TOFU / MOFU / BOFU — أين تتسرب فرص التحويل؟",
-    icon: <TrendingUp size={20} />,
-    color: "from-blue-600/20 to-blue-900/10",
+    icon: <TrendingUp size={18} />,
+    color: "from-blue-600/15 to-blue-900/5",
+    borderHex: "#3b82f620",
   },
   {
     kind: "winner_formula",
     title: "صيغة الفائزين",
     desc: "القالب القابل للاستنساخ من أعلى تغريداتك أداءً",
-    icon: <Zap size={20} />,
-    color: "from-yellow-600/20 to-yellow-900/10",
+    icon: <Zap size={18} />,
+    color: "from-amber-600/15 to-amber-900/5",
+    borderHex: "#f59e0b20",
   },
   {
     kind: "topic_roi",
     title: "مصفوفة المواضيع",
     desc: "منجم / ذهب / مهدور / ميت — وجّه وقتك للمكان الصحيح",
-    icon: <BarChart2 size={20} />,
-    color: "from-purple-600/20 to-purple-900/10",
+    icon: <BarChart2 size={18} />,
+    color: "from-violet-600/15 to-violet-900/5",
+    borderHex: "#8b5cf620",
   },
   {
     kind: "action_plan",
     title: "خطة الأسبوع",
-    desc: "7 تغريدات جاهزة للنشر بناءً على أنجح أساليبك",
-    icon: <CalendarDays size={20} />,
-    color: "from-green-600/20 to-green-900/10",
+    desc: "٧ تغريدات جاهزة للنشر بناءً على أنجح أساليبك",
+    icon: <CalendarDays size={18} />,
+    color: "from-emerald-600/15 to-emerald-900/5",
+    borderHex: "#22c55e20",
   },
+];
+
+const SAMPLE_QUESTIONS = [
+  "ما هي المواضيع التي تناسب جمهوري أكثر؟",
+  "متى أفضل وقت للنشر بناءً على بياناتي؟",
+  "ما أسلوب الكتابة الذي يميزني عن غيري؟",
+  "كيف أحوّل المتابعين إلى عملاء بمحتواي؟",
 ];
 
 export default function AITab({ account, apiKey }: { account: string; apiKey: string }) {
   if (!apiKey) {
     return (
-      <div className="card text-center py-12">
-        <Sparkles size={40} className="text-yellow-400 mx-auto mb-4" />
+      <div className="card text-center py-14" style={{ borderColor: "rgba(139,92,246,0.15)" }}>
+        <div
+          className="w-14 h-14 rounded-2xl flex items-center justify-center mx-auto mb-4"
+          style={{ background: "linear-gradient(135deg, #8b5cf630, #6d28d930)" }}
+        >
+          <BookOpen size={28} style={{ color: "#a78bfa" }} />
+        </div>
         <h3 className="text-lg font-bold mb-2">أدخل مفتاح Anthropic لتشغيل التحليلات</h3>
-        <p className="text-slate-400 text-sm max-w-md mx-auto">
-          استخدم زر <span className="text-yellow-400">⚠ أدخل مفتاح Anthropic</span> في الأعلى.
-          المفتاح يُحفظ في متصفحك فقط.
+        <p className="text-slate-400 text-sm max-w-md mx-auto leading-relaxed">
+          استخدم زر{" "}
+          <span className="text-amber-400 font-semibold">⚠ أدخل مفتاح Anthropic</span>{" "}
+          في الأعلى.
+          <br />
+          المفتاح يُحفظ في متصفحك فقط — لا يصل إليه أحد.
         </p>
       </div>
     );
   }
 
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-      {INSIGHTS.map((cfg) => (
-        <InsightCard key={cfg.kind} cfg={cfg} account={account} apiKey={apiKey} />
-      ))}
+    <div className="space-y-6">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
+        {INSIGHTS.map((cfg) => (
+          <InsightCard key={cfg.kind} cfg={cfg} account={account} apiKey={apiKey} />
+        ))}
+      </div>
+      <ChatSection account={account} apiKey={apiKey} />
     </div>
   );
 }
 
-/* ── Insight Card Shell ───────────────────────────────────────────────────── */
+/* ── Insight Card Shell ── */
 
 function InsightCard({ cfg, account, apiKey }: {
   cfg: InsightConfig; account: string; apiKey: string;
@@ -92,20 +115,25 @@ function InsightCard({ cfg, account, apiKey }: {
   }
 
   return (
-    <div className={`card bg-gradient-to-br ${cfg.color}`}>
+    <div
+      className={`card bg-gradient-to-br ${cfg.color}`}
+      style={{ borderColor: cfg.borderHex }}
+    >
       <div className="flex items-start justify-between mb-4">
         <div className="flex items-start gap-3">
-          <div className="bg-slate-800/60 p-2.5 rounded-lg text-white">{cfg.icon}</div>
+          <div className="p-2 rounded-xl" style={{ background: "rgba(30,44,85,0.7)", color: "#a78bfa" }}>
+            {cfg.icon}
+          </div>
           <div>
-            <h3 className="font-bold text-lg">{cfg.title}</h3>
-            <p className="text-xs text-slate-400">{cfg.desc}</p>
+            <h3 className="font-bold">{cfg.title}</h3>
+            <p className="text-xs text-slate-400 mt-0.5">{cfg.desc}</p>
           </div>
         </div>
         {data && (
           <button
             onClick={() => load(true)}
-            className="text-xs text-slate-400 hover:text-white flex items-center gap-1"
-            title="تحديث التحليل"
+            className="text-slate-500 hover:text-slate-300 transition flex items-center gap-1 text-xs"
+            title="تحديث"
           >
             <RefreshCw size={12} />
             {cached && <span>محفوظ</span>}
@@ -116,7 +144,8 @@ function InsightCard({ cfg, account, apiKey }: {
       {!data && !loading && !error && (
         <button
           onClick={() => load(false)}
-          className="w-full py-2.5 bg-brand-600 hover:bg-brand-700 rounded-lg font-semibold text-sm transition flex items-center justify-center gap-2"
+          className="w-full py-2.5 rounded-xl font-semibold text-sm transition flex items-center justify-center gap-2 text-white"
+          style={{ background: "linear-gradient(135deg, #7c3aed, #6d28d9)" }}
         >
           <Sparkles size={14} /> تشغيل التحليل
         </button>
@@ -125,7 +154,7 @@ function InsightCard({ cfg, account, apiKey }: {
       {loading && (
         <div className="flex items-center justify-center py-8 text-slate-400 gap-2">
           <Loader2 size={20} className="animate-spin" />
-          <span className="text-sm">جاري التحليل... 30-60 ثانية</span>
+          <span className="text-sm">جاري التحليل... ٣٠-٦٠ ثانية</span>
         </div>
       )}
 
@@ -143,7 +172,7 @@ function InsightCard({ cfg, account, apiKey }: {
   );
 }
 
-/* ── Renderers ────────────────────────────────────────────────────────────── */
+/* ── Renderers ── */
 
 function Renderer({ kind, data }: { kind: string; data: Record<string, unknown> }) {
   if (kind === "content_funnel") return <ContentFunnelView data={data} />;
@@ -153,7 +182,7 @@ function Renderer({ kind, data }: { kind: string; data: Record<string, unknown> 
   return <pre className="text-xs overflow-auto">{JSON.stringify(data, null, 2)}</pre>;
 }
 
-/* ── 1. Content Funnel ───────────────────────────────────────────────────── */
+/* ── 1. Content Funnel ── */
 
 interface FunnelBucket { count: number; pct: number; avg_eng: number; best_example: string; }
 interface ContentFunnelData {
@@ -165,9 +194,9 @@ function ContentFunnelView({ data }: { data: Record<string, unknown> }) {
   const d = data as unknown as ContentFunnelData;
   const dist = d.distribution;
   const levels = [
-    { key: "TOFU" as const, label: "TOFU", sub: "تعليمي / ترفيهي", color: "bg-blue-500",   ideal: 70 },
-    { key: "MOFU" as const, label: "MOFU", sub: "رأي / خبرة / قصة",  color: "bg-purple-500", ideal: 20 },
-    { key: "BOFU" as const, label: "BOFU", sub: "دعوة لعمل / تحويل", color: "bg-green-500",  ideal: 10 },
+    { key: "TOFU" as const, label: "TOFU", sub: "تعليمي / ترفيهي", color: "#3b82f6", ideal: 70 },
+    { key: "MOFU" as const, label: "MOFU", sub: "رأي / خبرة / قصة", color: "#8b5cf6", ideal: 20 },
+    { key: "BOFU" as const, label: "BOFU", sub: "دعوة لعمل / تحويل", color: "#22c55e", ideal: 10 },
   ];
 
   return (
@@ -181,13 +210,17 @@ function ContentFunnelView({ data }: { data: Record<string, unknown> }) {
             <div className="flex items-center justify-between mb-1 text-sm">
               <span className="font-semibold">{label} <span className="text-slate-400 font-normal text-xs">— {sub}</span></span>
               <span className="text-xs text-slate-400">
-                {pct}% <span className={gap > 15 ? "text-red-400" : gap < -5 ? "text-amber-400" : "text-slate-500"}>
+                {pct}%{" "}
+                <span style={{ color: gap > 15 ? "#f87171" : gap < -5 ? "#fbbf24" : "#6b7280" }}>
                   (مثالي {ideal}%)
                 </span>
               </span>
             </div>
-            <div className="h-3 bg-slate-800 rounded-full overflow-hidden mb-1">
-              <div className={`h-full ${color} rounded-full transition-all`} style={{ width: `${Math.min(pct, 100)}%` }} />
+            <div className="h-2.5 rounded-full overflow-hidden mb-1" style={{ background: "#141c38" }}>
+              <div
+                className="h-full rounded-full transition-all"
+                style={{ width: `${Math.min(pct, 100)}%`, background: color }}
+              />
             </div>
             <div className="flex justify-between text-xs text-slate-500">
               <span>{bucket?.count ?? 0} تغريدة</span>
@@ -203,17 +236,17 @@ function ContentFunnelView({ data }: { data: Record<string, unknown> }) {
       })}
 
       {d.diagnosis && (
-        <div className="bg-red-900/20 border border-red-700/30 rounded-lg p-3 text-sm text-red-300">
+        <div className="rounded-xl p-3 text-sm" style={{ background: "rgba(127,29,29,0.2)", border: "1px solid rgba(239,68,68,0.2)", color: "#fca5a5" }}>
           🔍 {d.diagnosis}
         </div>
       )}
       {d.top_recommendation && (
-        <div className="bg-green-900/20 border border-green-700/30 rounded-lg p-3 text-sm text-green-300">
+        <div className="rounded-xl p-3 text-sm" style={{ background: "rgba(20,83,45,0.2)", border: "1px solid rgba(34,197,94,0.2)", color: "#86efac" }}>
           ✅ {d.top_recommendation}
         </div>
       )}
       {d.missed_opportunity && (
-        <div className="bg-amber-900/20 border border-amber-700/30 rounded-lg p-3 text-xs text-amber-300">
+        <div className="rounded-xl p-3 text-xs" style={{ background: "rgba(120,53,15,0.2)", border: "1px solid rgba(245,158,11,0.2)", color: "#fcd34d" }}>
           💸 {d.missed_opportunity}
         </div>
       )}
@@ -221,7 +254,7 @@ function ContentFunnelView({ data }: { data: Record<string, unknown> }) {
   );
 }
 
-/* ── 2. Winner Formula ───────────────────────────────────────────────────── */
+/* ── 2. Winner Formula ── */
 
 interface WinnerPattern { name: string; description: string; winner_avg: number; loser_avg: number; multiplier: number; example: string; }
 interface WinnerFormulaData { patterns: WinnerPattern[]; template: string; avoid: string[]; ready_examples: string[]; }
@@ -231,32 +264,34 @@ function WinnerFormulaView({ data }: { data: Record<string, unknown> }) {
   return (
     <div className="space-y-4 mt-2">
       {d.template && (
-        <div className="bg-yellow-900/20 border border-yellow-600/30 rounded-lg p-3">
-          <p className="text-xs text-yellow-400 font-semibold mb-1">القالب الفائز</p>
-          <p className="text-sm text-yellow-100">{d.template}</p>
+        <div className="rounded-xl p-3" style={{ background: "rgba(120,53,15,0.2)", border: "1px solid rgba(245,158,11,0.2)" }}>
+          <p className="text-xs font-semibold mb-1" style={{ color: "#fbbf24" }}>القالب الفائز</p>
+          <p className="text-sm" style={{ color: "#fef3c7" }}>{d.template}</p>
         </div>
       )}
 
       {d.patterns?.map((p, i) => (
-        <div key={i} className="bg-slate-900/40 border border-slate-700/50 rounded-lg p-3">
+        <div key={i} className="rounded-xl p-3" style={{ background: "rgba(20,28,56,0.6)", border: "1px solid rgba(30,44,85,0.8)" }}>
           <div className="flex items-center justify-between mb-1">
             <h4 className="font-semibold text-sm">{p.name}</h4>
-            <span className="text-xs font-bold text-green-400">{p.multiplier}×</span>
+            <span className="text-xs font-bold" style={{ color: "#4ade80" }}>{p.multiplier}×</span>
           </div>
           <p className="text-xs text-slate-300 mb-2">{p.description}</p>
           <div className="flex gap-4 text-xs text-slate-500 mb-2">
-            <span>فائزات: <span className="text-green-400">{p.winner_avg}</span></span>
-            <span>خاسرات: <span className="text-red-400">{p.loser_avg}</span></span>
+            <span>فائزات: <span style={{ color: "#4ade80" }}>{p.winner_avg}</span></span>
+            <span>خاسرات: <span style={{ color: "#f87171" }}>{p.loser_avg}</span></span>
           </div>
           {p.example && <p className="text-xs text-slate-500 italic">&ldquo;{p.example.slice(0, 120)}&rdquo;</p>}
         </div>
       ))}
 
       {d.avoid && d.avoid.length > 0 && (
-        <div className="bg-red-900/10 border border-red-700/20 rounded-lg p-3">
-          <p className="text-xs text-red-400 font-semibold mb-2">تجنّب</p>
+        <div className="rounded-xl p-3" style={{ background: "rgba(127,29,29,0.15)", border: "1px solid rgba(239,68,68,0.15)" }}>
+          <p className="text-xs font-semibold mb-2" style={{ color: "#f87171" }}>تجنّب</p>
           <ul className="space-y-1">
-            {d.avoid.map((a, i) => <li key={i} className="text-xs text-slate-400 flex gap-2"><span>✕</span>{a}</li>)}
+            {d.avoid.map((a, i) => (
+              <li key={i} className="text-xs text-slate-400 flex gap-2"><span>✕</span>{a}</li>
+            ))}
           </ul>
         </div>
       )}
@@ -273,22 +308,22 @@ function WinnerFormulaView({ data }: { data: Record<string, unknown> }) {
   );
 }
 
-/* ── 3. Topic ROI Matrix ─────────────────────────────────────────────────── */
+/* ── 3. Topic ROI Matrix ── */
 
 interface Topic { name: string; count: number; avg_eng: number; trend: string; quadrant: string; recommendation: string; }
 interface TopicROIData { topics: Topic[]; biggest_opportunity: string; immediate_cut: string; }
 
-const QUADRANT_STYLE: Record<string, { badge: string; icon: string }> = {
-  "منجم": { badge: "bg-green-900/40 text-green-300 border-green-700/40",  icon: "💎" },
-  "ذهب":  { badge: "bg-yellow-900/40 text-yellow-300 border-yellow-700/40", icon: "⭐" },
-  "مهدور":{ badge: "bg-red-900/40 text-red-300 border-red-700/40",          icon: "📉" },
-  "ميت":  { badge: "bg-slate-800/60 text-slate-400 border-slate-700/40",    icon: "💤" },
+const QUADRANT_STYLE: Record<string, { bg: string; text: string; border: string; icon: string }> = {
+  "منجم": { bg: "rgba(20,83,45,0.3)",   text: "#86efac", border: "rgba(34,197,94,0.25)",  icon: "💎" },
+  "ذهب":  { bg: "rgba(120,53,15,0.3)",   text: "#fcd34d", border: "rgba(245,158,11,0.25)", icon: "⭐" },
+  "مهدور":{ bg: "rgba(127,29,29,0.3)",   text: "#fca5a5", border: "rgba(239,68,68,0.25)",  icon: "📉" },
+  "ميت":  { bg: "rgba(20,28,56,0.5)",    text: "#94a3b8", border: "rgba(30,44,85,0.6)",    icon: "💤" },
 };
 
 function TrendIcon({ trend }: { trend: string }) {
-  if (trend === "يصعد")  return <TrendingUp size={12} className="text-green-400" />;
-  if (trend === "يهبط") return <TrendingDown size={12} className="text-red-400" />;
-  return <Minus size={12} className="text-slate-400" />;
+  if (trend === "يصعد")  return <TrendingUp size={11} style={{ color: "#4ade80" }} />;
+  if (trend === "يهبط") return <TrendingDown size={11} style={{ color: "#f87171" }} />;
+  return <Minus size={11} className="text-slate-400" />;
 }
 
 function TopicROIView({ data }: { data: Record<string, unknown> }) {
@@ -298,16 +333,21 @@ function TopicROIView({ data }: { data: Record<string, unknown> }) {
       {d.topics?.map((t, i) => {
         const style = QUADRANT_STYLE[t.quadrant] ?? QUADRANT_STYLE["ميت"];
         return (
-          <div key={i} className="bg-slate-900/40 border border-slate-700/40 rounded-lg p-3">
+          <div key={i} className="rounded-xl p-3" style={{ background: style.bg, border: `1px solid ${style.border}` }}>
             <div className="flex items-center justify-between mb-2">
               <div className="flex items-center gap-2">
                 <span>{style.icon}</span>
                 <h4 className="font-semibold text-sm">{t.name}</h4>
                 <TrendIcon trend={t.trend} />
               </div>
-              <span className={`text-xs px-2 py-0.5 rounded-full border ${style.badge}`}>{t.quadrant}</span>
+              <span
+                className="text-xs px-2 py-0.5 rounded-full font-semibold"
+                style={{ background: style.bg, color: style.text, border: `1px solid ${style.border}` }}
+              >
+                {t.quadrant}
+              </span>
             </div>
-            <div className="flex gap-4 text-xs text-slate-500 mb-2">
+            <div className="flex gap-4 text-xs text-slate-500 mb-1.5">
               <span>{t.count} تغريدة</span>
               <span>متوسط: {t.avg_eng}</span>
               <span className="text-slate-400">{t.trend}</span>
@@ -318,12 +358,12 @@ function TopicROIView({ data }: { data: Record<string, unknown> }) {
       })}
 
       {d.biggest_opportunity && (
-        <div className="bg-green-900/20 border border-green-700/30 rounded-lg p-3 text-sm text-green-300">
+        <div className="rounded-xl p-3 text-sm" style={{ background: "rgba(20,83,45,0.2)", border: "1px solid rgba(34,197,94,0.2)", color: "#86efac" }}>
           🚀 {d.biggest_opportunity}
         </div>
       )}
       {d.immediate_cut && (
-        <div className="bg-red-900/20 border border-red-700/30 rounded-lg p-3 text-sm text-red-300">
+        <div className="rounded-xl p-3 text-sm" style={{ background: "rgba(127,29,29,0.2)", border: "1px solid rgba(239,68,68,0.2)", color: "#fca5a5" }}>
           ✂️ {d.immediate_cut}
         </div>
       )}
@@ -331,7 +371,7 @@ function TopicROIView({ data }: { data: Record<string, unknown> }) {
   );
 }
 
-/* ── 4. Action Plan ──────────────────────────────────────────────────────── */
+/* ── 4. Action Plan ── */
 
 interface DayPlan { day: string; best_time: string; topic: string; format: string; hook: string; full_tweet: string; }
 interface ActionPlanData { week_plan: DayPlan[]; key_insight: string; quick_win: string; }
@@ -341,27 +381,25 @@ function ActionPlanView({ data }: { data: Record<string, unknown> }) {
   return (
     <div className="space-y-4 mt-2">
       {d.key_insight && (
-        <div className="bg-brand-900/30 border border-brand-700/30 rounded-lg p-3 text-sm text-brand-300">
+        <div className="rounded-xl p-3 text-sm" style={{ background: "rgba(76,29,149,0.25)", border: "1px solid rgba(139,92,246,0.2)", color: "#c4b5fd" }}>
           💡 {d.key_insight}
         </div>
       )}
       {d.quick_win && (
-        <div className="bg-green-900/20 border border-green-700/30 rounded-lg p-3 text-sm text-green-300">
+        <div className="rounded-xl p-3 text-sm" style={{ background: "rgba(20,83,45,0.2)", border: "1px solid rgba(34,197,94,0.2)", color: "#86efac" }}>
           ⚡ <span className="font-semibold">ابدأ اليوم:</span> {d.quick_win}
         </div>
       )}
 
       <div className="space-y-3">
         {d.week_plan?.map((day, i) => (
-          <div key={i} className="bg-slate-900/40 border border-slate-700/40 rounded-lg p-3">
+          <div key={i} className="rounded-xl p-3" style={{ background: "rgba(20,28,56,0.6)", border: "1px solid rgba(30,44,85,0.8)" }}>
             <div className="flex items-center justify-between mb-2">
               <div className="flex items-center gap-2">
-                <span className="font-bold text-brand-400">{day.day}</span>
+                <span className="font-bold" style={{ color: "#a78bfa" }}>{day.day}</span>
                 <span className="text-xs text-slate-500">{day.best_time}</span>
               </div>
-              <div className="flex gap-2">
-                <span className="badge badge-blue text-xs">{day.format}</span>
-              </div>
+              <span className="badge badge-violet text-xs">{day.format}</span>
             </div>
             <p className="text-xs text-slate-400 mb-1">📌 {day.topic}</p>
             {day.hook && <p className="text-xs text-slate-500 mb-2">🪝 {day.hook}</p>}
@@ -373,7 +411,7 @@ function ActionPlanView({ data }: { data: Record<string, unknown> }) {
   );
 }
 
-/* ── Copy Card ────────────────────────────────────────────────────────────── */
+/* ── Copy Card ── */
 
 function CopyCard({ text }: { text: string }) {
   const [copied, setCopied] = useState(false);
@@ -383,15 +421,139 @@ function CopyCard({ text }: { text: string }) {
     setTimeout(() => setCopied(false), 2000);
   }
   return (
-    <div className="bg-slate-800/60 border border-slate-700/40 rounded-lg p-3 relative group">
+    <div className="rounded-xl p-3 relative group" style={{ background: "rgba(20,28,56,0.7)", border: "1px solid rgba(30,44,85,0.8)" }}>
       <p className="text-xs text-slate-300 leading-relaxed pl-6">{text}</p>
       <button
         onClick={copy}
-        className="absolute top-2 left-2 text-slate-500 hover:text-white transition opacity-0 group-hover:opacity-100"
+        className="absolute top-2.5 left-2.5 text-slate-500 hover:text-white transition opacity-0 group-hover:opacity-100"
         title="نسخ"
       >
-        {copied ? <CheckCheck size={14} className="text-green-400" /> : <Copy size={14} />}
+        {copied ? <CheckCheck size={13} style={{ color: "#4ade80" }} /> : <Copy size={13} />}
       </button>
+    </div>
+  );
+}
+
+/* ── Chat Section ── */
+
+interface ChatMessage { role: "user" | "ai"; text: string; }
+
+function ChatSection({ account, apiKey }: { account: string; apiKey: string }) {
+  const [messages, setMessages] = useState<ChatMessage[]>([]);
+  const [input, setInput] = useState("");
+  const [loading, setLoading] = useState(false);
+  const bottomRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    bottomRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [messages, loading]);
+
+  async function send(text?: string) {
+    const q = (text ?? input).trim();
+    if (!q || loading) return;
+    setInput("");
+    setMessages((prev) => [...prev, { role: "user", text: q }]);
+    setLoading(true);
+    try {
+      const res = await chatWithAI(account, q, apiKey);
+      setMessages((prev) => [...prev, { role: "ai", text: res.answer }]);
+    } catch (e: unknown) {
+      const err = e as { response?: { data?: { detail?: string } } };
+      const detail = err?.response?.data?.detail || "حدث خطأ — حاول مرة أخرى";
+      setMessages((prev) => [...prev, { role: "ai", text: detail }]);
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  return (
+    <div className="card" style={{ borderColor: "rgba(139,92,246,0.2)" }}>
+      <div className="flex items-center gap-3 mb-4">
+        <div className="p-2 rounded-xl" style={{ background: "rgba(76,29,149,0.3)", color: "#a78bfa" }}>
+          <MessageSquare size={18} />
+        </div>
+        <div>
+          <h3 className="font-bold">اسأل بياناتك</h3>
+          <p className="text-xs text-slate-500">سؤال حر عن تغريداتك — يجيبك الذكاء الاصطناعي</p>
+        </div>
+      </div>
+
+      {/* Sample questions (shown when no messages) */}
+      {messages.length === 0 && (
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mb-4">
+          {SAMPLE_QUESTIONS.map((q, i) => (
+            <button
+              key={i}
+              onClick={() => send(q)}
+              disabled={loading}
+              className="text-right text-xs px-3 py-2.5 rounded-xl transition disabled:opacity-50"
+              style={{
+                background: "rgba(20,28,56,0.6)",
+                border: "1px solid rgba(30,44,85,0.8)",
+                color: "#94a3b8",
+              }}
+              onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.color = "#c4b5fd"; (e.currentTarget as HTMLElement).style.borderColor = "rgba(139,92,246,0.3)"; }}
+              onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.color = "#94a3b8"; (e.currentTarget as HTMLElement).style.borderColor = "rgba(30,44,85,0.8)"; }}
+            >
+              {q}
+            </button>
+          ))}
+        </div>
+      )}
+
+      {/* Chat messages */}
+      {messages.length > 0 && (
+        <div className="space-y-3 mb-4 max-h-96 overflow-y-auto px-1">
+          {messages.map((m, i) => (
+            <div key={i} className={`flex ${m.role === "user" ? "justify-start" : "justify-end"}`}>
+              <div
+                className="max-w-[88%] px-4 py-2.5 rounded-2xl text-sm leading-relaxed"
+                style={
+                  m.role === "user"
+                    ? { background: "rgba(76,29,149,0.25)", border: "1px solid rgba(139,92,246,0.2)", color: "#e2e8f0" }
+                    : { background: "rgba(20,28,56,0.8)", border: "1px solid rgba(30,44,85,0.8)", color: "#cbd5e1" }
+                }
+              >
+                {m.text}
+              </div>
+            </div>
+          ))}
+          {loading && (
+            <div className="flex justify-end">
+              <div
+                className="px-4 py-2.5 rounded-2xl flex items-center gap-2 text-sm text-slate-400"
+                style={{ background: "rgba(20,28,56,0.8)", border: "1px solid rgba(30,44,85,0.8)" }}
+              >
+                <Loader2 size={14} className="animate-spin" />
+                جاري التفكير...
+              </div>
+            </div>
+          )}
+          <div ref={bottomRef} />
+        </div>
+      )}
+
+      {/* Input */}
+      <div className="flex gap-2">
+        <input
+          value={input}
+          onChange={(e) => setInput(e.target.value)}
+          onKeyDown={(e) => e.key === "Enter" && !e.shiftKey && send()}
+          placeholder="مثال: ما هي المواضيع التي تناسب جمهوري أكثر؟"
+          className="input flex-1 text-sm"
+          disabled={loading}
+        />
+        <button
+          onClick={() => send()}
+          disabled={!input.trim() || loading}
+          className="px-4 py-2 rounded-xl transition disabled:opacity-40 flex items-center gap-1.5 text-sm font-semibold text-white flex-shrink-0"
+          style={{ background: "linear-gradient(135deg, #7c3aed, #6d28d9)" }}
+        >
+          {loading
+            ? <Loader2 size={15} className="animate-spin" />
+            : <SendHorizontal size={15} />}
+        </button>
+      </div>
     </div>
   );
 }
