@@ -1,27 +1,69 @@
-import { Heart, Eye, TrendingUp, Clock, Calendar, Image } from "lucide-react";
 import { formatNumber } from "@/lib/utils";
 
+interface Stat { value: string; label: string; glow?: string; }
+
 export default function StatsRow({ summary }: { summary: Record<string, number | string> }) {
-  const stats = [
-    { icon: <Heart size={18} />, label: "إجمالي التفاعل", value: formatNumber(summary.total_engagement as number), color: "text-pink-400" },
-    { icon: <Eye size={18} />, label: "إجمالي المشاهدات", value: formatNumber(summary.total_impressions as number), color: "text-blue-400" },
-    { icon: <TrendingUp size={18} />, label: "متوسط التفاعل/تغريدة", value: (summary.avg_engagement as number).toFixed(0), color: "text-green-400" },
-    { icon: <Clock size={18} />, label: "أفضل ساعة للنشر", value: `${summary.best_hour}:00`, color: "text-yellow-400" },
-    { icon: <Calendar size={18} />, label: "أفضل يوم", value: summary.best_day as string, color: "text-purple-400" },
-    { icon: <Image size={18} />, label: "نسبة الوسائط", value: `${summary.with_media_pct}%`, color: "text-cyan-400" },
+  const stats: Stat[] = [
+    {
+      value: formatNumber(summary.total_engagement as number),
+      label: "إجمالي التفاعل",
+      glow: "rgba(244,114,182,0.6)",
+    },
+    {
+      value: formatNumber(summary.total_impressions as number),
+      label: "المشاهدات",
+      glow: "rgba(96,165,250,0.6)",
+    },
+    {
+      value: (summary.avg_engagement as number).toFixed(0),
+      label: "متوسط/تغريدة",
+      glow: "rgba(74,222,128,0.6)",
+    },
+    {
+      value: `${summary.best_hour}:00`,
+      label: "أفضل ساعة",
+      glow: "rgba(251,191,36,0.6)",
+    },
+    {
+      value: summary.best_day as string,
+      label: "أفضل يوم",
+      glow: "rgba(167,139,250,0.6)",
+    },
+    {
+      value: `${summary.with_media_pct}%`,
+      label: "نسبة الوسائط",
+      glow: "rgba(34,211,238,0.6)",
+    },
   ];
 
   return (
-    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
-      {stats.map((s, i) => (
-        <div key={i} className="card flex items-center gap-3">
-          <div className={`${s.color} bg-slate-800/50 p-2 rounded-lg`}>{s.icon}</div>
-          <div className="min-w-0">
-            <p className="text-xs text-slate-400 truncate">{s.label}</p>
-            <p className="text-lg font-bold truncate">{s.value}</p>
+    <div
+      className="rounded-2xl px-5 py-4"
+      style={{ background: "var(--surface)", border: "1px solid var(--border)" }}
+    >
+      <div className="flex flex-wrap gap-x-2 gap-y-3">
+        {stats.map((s, i) => (
+          <div key={i} className="flex items-baseline gap-1.5 px-3">
+            <span
+              className="text-lg font-black"
+              style={{ color: s.glow ? s.glow.replace("0.6)", "1)") : "#e9ecef" }}
+            >
+              {s.value}
+            </span>
+            <span className="text-xs" style={{ color: "var(--muted)" }}>
+              {s.label}
+            </span>
+            {i < stats.length - 1 && (
+              <span
+                className="text-xs mr-3 hidden sm:inline"
+                style={{ color: "var(--border2)", paddingRight: "6px" }}
+              >
+                ·
+              </span>
+            )}
           </div>
-        </div>
-      ))}
+        ))}
+      </div>
     </div>
   );
 }

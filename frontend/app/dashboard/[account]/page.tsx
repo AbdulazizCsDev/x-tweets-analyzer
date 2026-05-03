@@ -18,8 +18,6 @@ export default function Dashboard({ params }: { params: Promise<{ account: strin
   const [tab, setTab] = useState<Tab>("basic");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
-
-  // Anthropic key (stored in localStorage)
   const [anthropicKey, setAnthropicKey] = useState("");
 
   useEffect(() => {
@@ -45,8 +43,11 @@ export default function Dashboard({ params }: { params: Promise<{ account: strin
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
-          <div className="animate-spin h-12 w-12 border-4 border-brand-500 border-t-transparent rounded-full mx-auto mb-4" />
-          <p className="text-slate-400">جاري تحميل التحليلات...</p>
+          <div
+            className="h-10 w-10 border-2 border-t-transparent rounded-full mx-auto mb-4 animate-spin"
+            style={{ borderColor: "#8b5cf6", borderTopColor: "transparent" }}
+          />
+          <p style={{ color: "var(--muted)" }} className="text-sm">جاري تحميل التحليلات...</p>
         </div>
       </div>
     );
@@ -57,10 +58,7 @@ export default function Dashboard({ params }: { params: Promise<{ account: strin
       <div className="min-h-screen flex items-center justify-center p-6">
         <div className="card max-w-md text-center">
           <p className="text-red-400 mb-4">{error || "لا توجد بيانات"}</p>
-          <button
-            onClick={() => router.push("/")}
-            className="text-brand-400 hover:underline"
-          >
+          <button onClick={() => router.push("/")} className="text-brand-400 hover:underline text-sm">
             رجوع للصفحة الرئيسية
           </button>
         </div>
@@ -71,100 +69,179 @@ export default function Dashboard({ params }: { params: Promise<{ account: strin
   const summary = analytics.summary as Record<string, number | string>;
 
   return (
-    <main className="min-h-screen pb-12">
-      {/* Header */}
-      <header className="sticky top-0 z-30 border-b" style={{ background: "rgba(7,11,24,0.85)", backdropFilter: "blur(16px)", borderColor: "#1e2c55" }}>
-        <div className="max-w-7xl mx-auto px-6 py-3.5 flex items-center justify-between">
-          <div className="flex items-center gap-4">
+    <main className="min-h-screen pb-16">
+
+      {/* ── Cover gradient ── */}
+      <div
+        className="h-20 relative overflow-hidden"
+        style={{ background: "linear-gradient(135deg, #0a0010 0%, #1a0035 40%, #0a0018 100%)" }}
+      >
+        <div
+          className="absolute inset-0"
+          style={{
+            background: "radial-gradient(ellipse 80% 120% at 30% 60%, rgba(139,92,246,0.35) 0%, transparent 65%)",
+          }}
+        />
+        <div
+          className="absolute inset-0"
+          style={{
+            background: "radial-gradient(ellipse 50% 80% at 80% 40%, rgba(245,158,11,0.12) 0%, transparent 60%)",
+          }}
+        />
+        {/* Subtle grid lines */}
+        <div
+          className="absolute inset-0 opacity-10"
+          style={{
+            backgroundImage: "linear-gradient(rgba(139,92,246,0.3) 1px, transparent 1px), linear-gradient(90deg, rgba(139,92,246,0.3) 1px, transparent 1px)",
+            backgroundSize: "40px 40px",
+          }}
+        />
+      </div>
+
+      {/* ── Sticky nav ── */}
+      <header
+        className="sticky top-0 z-30 border-b"
+        style={{
+          background: "rgba(0,0,9,0.88)",
+          backdropFilter: "blur(20px)",
+          borderColor: "var(--border)",
+        }}
+      >
+        <div className="max-w-5xl mx-auto px-5 py-3 flex items-center justify-between">
+          <div className="flex items-center gap-3">
             <button
               onClick={() => router.push("/")}
-              className="text-slate-400 hover:text-white transition flex items-center gap-1.5 text-sm"
+              className="transition rounded-full p-1.5"
+              style={{ color: "var(--muted)" }}
+              onMouseEnter={(e) => (e.currentTarget.style.color = "#e9ecef")}
+              onMouseLeave={(e) => (e.currentTarget.style.color = "var(--muted)")}
             >
               <ArrowRight size={18} />
             </button>
-            {/* Logo */}
-            <div className="flex items-center gap-2 border-r border-slate-800 pl-4 pr-0">
-              <div className="w-6 h-6 rounded-md flex items-center justify-center" style={{ background: "linear-gradient(135deg, #8b5cf6, #6d28d9)" }}>
+
+            <div
+              className="flex items-center gap-2 pr-3 border-r"
+              style={{ borderColor: "var(--border2)" }}
+            >
+              <div
+                className="w-6 h-6 rounded-md flex items-center justify-center flex-shrink-0"
+                style={{ background: "linear-gradient(135deg,#8b5cf6,#6d28d9)" }}
+              >
                 <BookOpen size={12} className="text-white" />
               </div>
               <span className="font-extrabold text-sm gradient-text hidden sm:block">بين السطور</span>
             </div>
+
             <div>
-              <h1 className="text-base font-bold leading-tight">@{account}</h1>
-              <p className="text-xs text-slate-500">
-                {(summary.total_tweets as number).toLocaleString()} تغريدة محللة
+              <h1 className="text-sm font-bold leading-tight">@{account}</h1>
+              <p className="text-xs" style={{ color: "var(--muted)" }}>
+                {(summary.total_tweets as number).toLocaleString()} تغريدة
               </p>
             </div>
           </div>
 
-          <div className="flex items-center gap-2">
-            <KeyInput value={anthropicKey} onChange={saveKey} />
-          </div>
+          <KeyInput value={anthropicKey} onChange={saveKey} />
         </div>
 
-        {/* Tabs */}
-        <div className="max-w-7xl mx-auto px-6 flex gap-0">
+        {/* Tabs — X style */}
+        <div className="max-w-5xl mx-auto px-5 flex">
           <TabBtn active={tab === "basic"} onClick={() => setTab("basic")} icon={<BarChart3 size={15} />} label="التحليلات" />
           <TabBtn active={tab === "ai"} onClick={() => setTab("ai")} icon={<Sparkles size={15} />} label="رؤى AI" />
         </div>
       </header>
 
-      <div className="max-w-7xl mx-auto px-6 pt-6">
+      {/* ── Profile info row ── */}
+      <div
+        className="border-b"
+        style={{ borderColor: "var(--border)", background: "var(--surface)" }}
+      >
+        <div className="max-w-5xl mx-auto px-5 py-4 flex items-center gap-4">
+          {/* Avatar */}
+          <div
+            className="w-14 h-14 rounded-full flex items-center justify-center text-2xl font-black text-white flex-shrink-0 -mt-8 ring-4"
+            style={{
+              background: "linear-gradient(135deg,#8b5cf6,#6d28d9)",
+              ringColor: "var(--bg)",
+            }}
+          >
+            {account[0]?.toUpperCase() ?? "X"}
+          </div>
+          <div>
+            <p className="font-black text-base leading-tight">@{account}</p>
+            <p className="text-xs mt-0.5" style={{ color: "var(--muted)" }}>
+              محلل بواسطة بين السطور · Claude claude-sonnet-4-6
+            </p>
+          </div>
+        </div>
+      </div>
+
+      {/* ── Content ── */}
+      <div className="max-w-5xl mx-auto px-5 pt-5">
         <StatsRow summary={summary} />
 
-        <div className="mt-6">
+        <div className="mt-5">
           {tab === "basic" && <BasicTab data={analytics} />}
-          {tab === "ai" && <AITab account={account} apiKey={anthropicKey} />}
+          {tab === "ai"    && <AITab account={account} apiKey={anthropicKey} />}
         </div>
       </div>
     </main>
   );
 }
 
+/* ── Tab Button — X style ── */
 function TabBtn({ active, onClick, icon, label }: {
   active: boolean; onClick: () => void; icon: React.ReactNode; label: string;
 }) {
   return (
     <button
       onClick={onClick}
-      className={`flex items-center gap-2 px-5 py-3 font-semibold border-b-2 transition text-sm ${
-        active ? "border-brand-500 text-brand-400" : "border-transparent text-slate-500 hover:text-slate-300"
-      }`}
+      className="flex items-center gap-1.5 px-5 py-3 text-sm font-bold border-b-2 transition"
+      style={{
+        borderColor: active ? "#8b5cf6" : "transparent",
+        color: active ? "#a78bfa" : "var(--muted)",
+      }}
+      onMouseEnter={(e) => { if (!active) (e.currentTarget as HTMLElement).style.color = "#e9ecef"; }}
+      onMouseLeave={(e) => { if (!active) (e.currentTarget as HTMLElement).style.color = "var(--muted)"; }}
     >
       {icon} {label}
     </button>
   );
 }
 
+/* ── Anthropic Key Input ── */
 function KeyInput({ value, onChange }: { value: string; onChange: (v: string) => void }) {
   const [open, setOpen] = useState(false);
   return (
     <div className="relative">
       <button
         onClick={() => setOpen(!open)}
-        className={`badge ${value ? "badge-green" : "badge-yellow"} cursor-pointer`}
+        className={`badge cursor-pointer ${value ? "badge-green" : "badge-yellow"}`}
       >
-        {value ? "✓ Anthropic" : "⚠ أدخل مفتاح Anthropic"}
+        {value ? "✓ Anthropic" : "⚠ مفتاح AI"}
       </button>
       {open && (
-        <div className="absolute left-0 top-10 card w-80 z-40" style={{ borderColor: "rgba(139,92,246,0.2)" }}>
-          <p className="text-sm font-semibold mb-2">مفتاح Anthropic API</p>
-          <p className="text-xs text-slate-400 mb-3">
-            مطلوب لتشغيل تحليلات الذكاء الاصطناعي. يُحفظ محلياً في متصفحك فقط.
+        <div
+          className="absolute left-0 top-10 card w-80 z-40"
+          style={{ borderColor: "rgba(139,92,246,0.25)" }}
+        >
+          <p className="text-sm font-bold mb-1">مفتاح Anthropic API</p>
+          <p className="text-xs mb-3" style={{ color: "var(--muted)" }}>
+            مطلوب لتحليلات AI. يُحفظ في متصفحك فقط — لا يُرسل لأي طرف.
           </p>
           <input
             type="password"
             value={value}
             onChange={(e) => onChange(e.target.value)}
             placeholder="sk-ant-..."
-            className="input mb-2"
+            className="input mb-3"
           />
           <a
             href="https://console.anthropic.com/settings/keys"
             target="_blank"
-            className="text-xs text-brand-400 hover:underline"
+            className="text-xs hover:underline"
+            style={{ color: "#a78bfa" }}
           >
-            احصل على مفتاح من console.anthropic.com →
+            احصل على مفتاحك من console.anthropic.com →
           </a>
         </div>
       )}

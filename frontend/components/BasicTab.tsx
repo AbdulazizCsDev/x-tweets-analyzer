@@ -3,107 +3,134 @@
 import {
   BarChart, Bar, XAxis, YAxis, ResponsiveContainer, Tooltip, Cell,
 } from "recharts";
-import { Heart, Repeat, MessageCircle } from "lucide-react";
+import { Heart, Repeat2, MessageCircle } from "lucide-react";
 import { formatNumber } from "@/lib/utils";
 
 interface Top10Item {
   id: string; text: string; engagement: number;
   likes: number; retweets: number; replies: number; created_at: string;
 }
-interface Hashtag { tag: string; count: number; avg_eng: number; }
-interface Mention { account: string; count: number; }
+interface Hashtag  { tag: string; count: number; avg_eng: number; }
+interface Mention  { account: string; count: number; }
 interface WordItem { word: string; count: number; }
 
-const CHART_COLORS = ["#3b82f6","#8b5cf6"];
+const TOOLTIP_STYLE = {
+  background: "#0e0e16",
+  border: "1px solid #2a2a3a",
+  borderRadius: 8,
+  color: "#e9ecef",
+  fontSize: 12,
+};
+
+const AXIS = { stroke: "#2a2a3a", tick: { fill: "#6b7280", fontSize: 11 } };
 
 export default function BasicTab({ data }: { data: Record<string, unknown> }) {
   return (
-    <div className="space-y-6">
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+    <div className="space-y-4">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         <HourlyChart data={data.hourly_avg as { hour: number; avg: number }[]} />
-        <DailyChart data={data.daily_avg as { day: string; avg: number }[]} />
+        <DailyChart  data={data.daily_avg  as { day:  string; avg: number }[]} />
       </div>
 
       <Heatmap data={data.heatmap as Record<string, Record<string, number>>} />
 
       <Top10 items={data.top10 as Top10Item[]} />
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         <Hashtags items={data.top_hashtags as Hashtag[]} />
         <Mentions items={data.top_mentions as Mention[]} />
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <Words items={data.word_freq as WordItem[]} />
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        <Words      items={data.word_freq   as WordItem[]} />
         <MediaImpact data={data.media_impact as { with_media_avg: number; without_media_avg: number }} />
       </div>
     </div>
   );
 }
 
+/* ── Hourly Chart ── */
 function HourlyChart({ data }: { data: { hour: number; avg: number }[] }) {
+  const maxVal = Math.max(...data.map(d => d.avg), 1);
   return (
     <div className="card">
-      <h3 className="font-bold mb-4">⏰ متوسط التفاعل حسب الساعة</h3>
-      <ResponsiveContainer width="100%" height={240}>
-        <BarChart data={data}>
-          <XAxis dataKey="hour" stroke="#94a3b8" tick={{ fontSize: 11 }} />
-          <YAxis stroke="#94a3b8" tick={{ fontSize: 11 }} />
-          <Tooltip contentStyle={{ background: "#0f172a", border: "1px solid #334155", borderRadius: 8 }} />
-          <Bar dataKey="avg" fill="#3b82f6" radius={[6, 6, 0, 0]} />
+      <h3 className="text-sm font-bold mb-4" style={{ color: "var(--muted)" }}>
+        متوسط التفاعل حسب الساعة
+      </h3>
+      <ResponsiveContainer width="100%" height={220}>
+        <BarChart data={data} barSize={10}>
+          <XAxis dataKey="hour" {...AXIS} />
+          <YAxis {...AXIS} />
+          <Tooltip contentStyle={TOOLTIP_STYLE} cursor={{ fill: "rgba(139,92,246,0.06)" }} />
+          <Bar dataKey="avg" radius={[4, 4, 0, 0]}>
+            {data.map((d, i) => (
+              <Cell key={i} fill={`rgba(139,92,246,${0.3 + (d.avg / maxVal) * 0.7})`} />
+            ))}
+          </Bar>
         </BarChart>
       </ResponsiveContainer>
     </div>
   );
 }
 
+/* ── Daily Chart ── */
 function DailyChart({ data }: { data: { day: string; avg: number }[] }) {
+  const maxVal = Math.max(...data.map(d => d.avg), 1);
   return (
     <div className="card">
-      <h3 className="font-bold mb-4">📅 متوسط التفاعل حسب اليوم</h3>
-      <ResponsiveContainer width="100%" height={240}>
-        <BarChart data={data}>
-          <XAxis dataKey="day" stroke="#94a3b8" tick={{ fontSize: 11 }} />
-          <YAxis stroke="#94a3b8" tick={{ fontSize: 11 }} />
-          <Tooltip contentStyle={{ background: "#0f172a", border: "1px solid #334155", borderRadius: 8 }} />
-          <Bar dataKey="avg" fill="#8b5cf6" radius={[6, 6, 0, 0]} />
+      <h3 className="text-sm font-bold mb-4" style={{ color: "var(--muted)" }}>
+        متوسط التفاعل حسب اليوم
+      </h3>
+      <ResponsiveContainer width="100%" height={220}>
+        <BarChart data={data} barSize={26}>
+          <XAxis dataKey="day" {...AXIS} />
+          <YAxis {...AXIS} />
+          <Tooltip contentStyle={TOOLTIP_STYLE} cursor={{ fill: "rgba(245,158,11,0.06)" }} />
+          <Bar dataKey="avg" radius={[4, 4, 0, 0]}>
+            {data.map((d, i) => (
+              <Cell key={i} fill={`rgba(245,158,11,${0.3 + (d.avg / maxVal) * 0.7})`} />
+            ))}
+          </Bar>
         </BarChart>
       </ResponsiveContainer>
     </div>
   );
 }
 
+/* ── Heatmap ── */
 function Heatmap({ data }: { data: Record<string, Record<string, number>> }) {
   const days = Object.keys(data);
-  const max = Math.max(...days.flatMap(d => Object.values(data[d])));
+  const max  = Math.max(...days.flatMap(d => Object.values(data[d])), 1);
   return (
     <div className="card">
-      <h3 className="font-bold mb-4">🔥 خريطة التفاعل (يوم × ساعة)</h3>
+      <h3 className="text-sm font-bold mb-4" style={{ color: "var(--muted)" }}>
+        خريطة التفاعل — يوم × ساعة
+      </h3>
       <div className="overflow-x-auto">
         <table className="w-full text-xs" style={{ minWidth: 600 }}>
           <thead>
             <tr>
-              <th className="p-1 text-slate-400"></th>
+              <th className="p-1 text-right font-normal" style={{ color: "var(--muted)", minWidth: 55 }}></th>
               {Array.from({ length: 24 }).map((_, h) => (
-                <th key={h} className="p-1 text-slate-400 font-normal">{h}</th>
+                <th key={h} className="p-1 text-center font-normal" style={{ color: "var(--muted)" }}>{h}</th>
               ))}
             </tr>
           </thead>
           <tbody>
             {days.map((d) => (
               <tr key={d}>
-                <td className="p-1 text-slate-400 font-semibold pl-3">{d}</td>
+                <td className="p-1 font-semibold" style={{ color: "var(--muted)" }}>{d}</td>
                 {Array.from({ length: 24 }).map((_, h) => {
                   const v = data[d]?.[h.toString()] || 0;
-                  const intensity = max > 0 ? v / max : 0;
+                  const pct = v / max;
                   return (
                     <td
                       key={h}
-                      className="p-0 w-6 h-6 rounded-sm"
+                      className="w-5 h-5 rounded-sm"
                       style={{
-                        background: intensity > 0
-                          ? `rgba(59, 130, 246, ${0.15 + intensity * 0.85})`
-                          : "rgba(30, 41, 59, 0.3)",
+                        background: pct > 0
+                          ? `rgba(139,92,246,${0.1 + pct * 0.9})`
+                          : "rgba(30,30,46,0.4)",
                       }}
                       title={`${d} ${h}:00 — ${v.toFixed(1)}`}
                     />
@@ -118,48 +145,104 @@ function Heatmap({ data }: { data: Record<string, Record<string, number>> }) {
   );
 }
 
+/* ── Top 10 — X Tweet Style ── */
+
+const RANK_GRADIENT = [
+  "linear-gradient(135deg,#f59e0b,#d97706)",
+  "linear-gradient(135deg,#94a3b8,#64748b)",
+  "linear-gradient(135deg,#c97c3a,#a0522d)",
+];
+const MEDALS = ["🥇", "🥈", "🥉"];
+
 function Top10({ items }: { items: Top10Item[] }) {
   return (
-    <div className="card">
-      <h3 className="font-bold mb-4">🏆 أعلى 10 تغريدات تفاعلاً</h3>
-      <div className="space-y-2">
+    <div className="card overflow-hidden p-0">
+      <div className="px-4 py-3 border-b" style={{ borderColor: "var(--border)" }}>
+        <h3 className="font-bold text-sm">أعلى ١٠ تغريدات تفاعلاً</h3>
+      </div>
+      <div>
         {items.map((t, i) => (
-          <div key={t.id} className="flex items-start gap-3 p-3 rounded-lg bg-slate-800/40 hover:bg-slate-800/70 transition">
-            <div className="text-2xl font-extrabold text-brand-400 w-8 text-center">{i + 1}</div>
-            <div className="flex-1 min-w-0">
-              <p className="text-sm leading-relaxed mb-2">{t.text}</p>
-              <div className="flex items-center gap-3 text-xs text-slate-400">
-                <span className="flex items-center gap-1"><Heart size={12} className="text-pink-400" />{formatNumber(t.likes)}</span>
-                <span className="flex items-center gap-1"><Repeat size={12} className="text-green-400" />{formatNumber(t.retweets)}</span>
-                <span className="flex items-center gap-1"><MessageCircle size={12} className="text-blue-400" />{formatNumber(t.replies)}</span>
-                <span className="text-slate-500">{t.created_at?.slice(0, 10)}</span>
-              </div>
-            </div>
-            <div className="text-left">
-              <div className="text-lg font-bold text-brand-400">{formatNumber(t.engagement)}</div>
-              <div className="text-xs text-slate-500">تفاعل</div>
-            </div>
-          </div>
+          <TweetCard key={t.id} tweet={t} rank={i + 1} />
         ))}
       </div>
     </div>
   );
 }
 
+function TweetCard({ tweet, rank }: { tweet: Top10Item; rank: number }) {
+  const gradient = RANK_GRADIENT[rank - 1] ?? "linear-gradient(135deg,#8b5cf6,#6d28d9)";
+  return (
+    <div className="x-tweet">
+      {/* Rank avatar */}
+      <div className="flex-shrink-0 pt-0.5">
+        <div
+          className="w-9 h-9 rounded-full flex items-center justify-center text-white text-xs"
+          style={{ background: gradient }}
+        >
+          {rank <= 3 ? MEDALS[rank - 1] : <span className="font-black">{rank}</span>}
+        </div>
+      </div>
+
+      {/* Body */}
+      <div className="flex-1 min-w-0">
+        <div className="flex items-center justify-between mb-1.5">
+          <span className="text-xs" style={{ color: "var(--muted)" }}>
+            {tweet.created_at?.slice(0, 10)}
+          </span>
+          <span
+            className="text-xs font-black px-2 py-0.5 rounded-full flex-shrink-0"
+            style={{ background: "rgba(139,92,246,0.1)", color: "#a78bfa" }}
+          >
+            {formatNumber(tweet.engagement)}
+          </span>
+        </div>
+
+        <p className="text-sm leading-relaxed mb-3" style={{ color: "var(--text)" }}>
+          {tweet.text}
+        </p>
+
+        {/* X-style engagement row */}
+        <div className="flex items-center gap-5">
+          <EngStat icon={<Heart size={13} />}         count={tweet.likes}    hover="hover:text-pink-400" />
+          <EngStat icon={<Repeat2 size={13} />}       count={tweet.retweets} hover="hover:text-green-400" />
+          <EngStat icon={<MessageCircle size={13} />} count={tweet.replies}  hover="hover:text-blue-400" />
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function EngStat({ icon, count, hover }: { icon: React.ReactNode; count: number; hover: string }) {
+  return (
+    <span
+      className={`flex items-center gap-1.5 text-xs transition cursor-default select-none ${hover}`}
+      style={{ color: "var(--muted)" }}
+    >
+      {icon}
+      {formatNumber(count)}
+    </span>
+  );
+}
+
+/* ── Hashtags ── */
 function Hashtags({ items }: { items: Hashtag[] }) {
   return (
     <div className="card">
-      <h3 className="font-bold mb-4">🏷️ أكثر الهاشتاقات</h3>
+      <h3 className="text-sm font-bold mb-4" style={{ color: "var(--muted)" }}>أكثر الهاشتاقات</h3>
       {items.length === 0 ? (
-        <p className="text-slate-400 text-sm">لا توجد هاشتاقات</p>
+        <p className="text-sm" style={{ color: "var(--muted)" }}>لا توجد هاشتاقات</p>
       ) : (
-        <div className="space-y-1.5">
+        <div className="space-y-1">
           {items.slice(0, 10).map((h) => (
-            <div key={h.tag} className="flex items-center justify-between text-sm py-1">
-              <span className="text-brand-400">#{h.tag}</span>
-              <div className="flex items-center gap-3 text-xs text-slate-400">
-                <span>{h.count}× استخدام</span>
-                <span className="text-green-400">{h.avg_eng} متوسط</span>
+            <div
+              key={h.tag}
+              className="flex items-center justify-between py-2 border-b last:border-b-0"
+              style={{ borderColor: "var(--border)" }}
+            >
+              <span className="text-sm font-semibold" style={{ color: "#a78bfa" }}>#{h.tag}</span>
+              <div className="flex items-center gap-3 text-xs" style={{ color: "var(--muted)" }}>
+                <span>{h.count}×</span>
+                <span style={{ color: "#4ade80" }}>{h.avg_eng} متوسط</span>
               </div>
             </div>
           ))}
@@ -169,18 +252,27 @@ function Hashtags({ items }: { items: Hashtag[] }) {
   );
 }
 
+/* ── Mentions ── */
 function Mentions({ items }: { items: Mention[] }) {
   return (
     <div className="card">
-      <h3 className="font-bold mb-4">👥 أكثر الحسابات منشن</h3>
+      <h3 className="text-sm font-bold mb-4" style={{ color: "var(--muted)" }}>أكثر الحسابات ذكراً</h3>
       {items.length === 0 ? (
-        <p className="text-slate-400 text-sm">لا توجد منشنات</p>
+        <p className="text-sm" style={{ color: "var(--muted)" }}>لا توجد منشنات</p>
       ) : (
         <div className="flex flex-wrap gap-2">
           {items.map((m) => (
-            <span key={m.account} className="badge badge-blue">
+            <span
+              key={m.account}
+              className="text-xs px-3 py-1 rounded-full font-medium"
+              style={{
+                background: "rgba(139,92,246,0.08)",
+                color: "#a78bfa",
+                border: "1px solid rgba(139,92,246,0.18)",
+              }}
+            >
               @{m.account}
-              <span className="opacity-60 mr-1">({m.count})</span>
+              <span className="opacity-50 mr-1">({m.count})</span>
             </span>
           ))}
         </div>
@@ -189,19 +281,28 @@ function Mentions({ items }: { items: Mention[] }) {
   );
 }
 
+/* ── Words ── */
 function Words({ items }: { items: WordItem[] }) {
   const max = items[0]?.count || 1;
   return (
     <div className="card">
-      <h3 className="font-bold mb-4">💬 أكثر الكلمات</h3>
-      <div className="space-y-1">
+      <h3 className="text-sm font-bold mb-4" style={{ color: "var(--muted)" }}>أكثر الكلمات تكراراً</h3>
+      <div className="space-y-2.5">
         {items.slice(0, 15).map((w) => (
-          <div key={w.word} className="flex items-center gap-2 text-sm">
-            <div className="flex-1 truncate">{w.word}</div>
-            <div className="w-20 h-2 bg-slate-800 rounded-full overflow-hidden">
-              <div className="h-full bg-brand-500" style={{ width: `${(w.count / max) * 100}%` }} />
+          <div key={w.word} className="flex items-center gap-3 text-sm">
+            <div className="flex-1 truncate" style={{ color: "var(--text)" }}>{w.word}</div>
+            <div className="w-24 h-1 rounded-full overflow-hidden" style={{ background: "var(--border2)" }}>
+              <div
+                className="h-full rounded-full"
+                style={{
+                  width: `${(w.count / max) * 100}%`,
+                  background: "linear-gradient(90deg, #8b5cf6, #f59e0b)",
+                }}
+              />
             </div>
-            <div className="text-xs text-slate-400 w-8 text-left">{w.count}</div>
+            <div className="text-xs w-7 text-right tabular-nums" style={{ color: "var(--muted)" }}>
+              {w.count}
+            </div>
           </div>
         ))}
       </div>
@@ -209,21 +310,23 @@ function Words({ items }: { items: WordItem[] }) {
   );
 }
 
+/* ── Media Impact ── */
 function MediaImpact({ data }: { data: { with_media_avg: number; without_media_avg: number } }) {
   const items = [
-    { name: "مع وسائط", value: data.with_media_avg },
+    { name: "مع وسائط",    value: data.with_media_avg },
     { name: "بدون وسائط", value: data.without_media_avg },
   ];
   return (
     <div className="card">
-      <h3 className="font-bold mb-4">🎥 تأثير الوسائط على التفاعل</h3>
-      <ResponsiveContainer width="100%" height={200}>
-        <BarChart data={items} layout="vertical">
-          <XAxis type="number" stroke="#94a3b8" tick={{ fontSize: 11 }} />
-          <YAxis dataKey="name" type="category" stroke="#94a3b8" tick={{ fontSize: 12 }} width={100} />
-          <Tooltip contentStyle={{ background: "#0f172a", border: "1px solid #334155", borderRadius: 8 }} />
+      <h3 className="text-sm font-bold mb-4" style={{ color: "var(--muted)" }}>تأثير الوسائط على التفاعل</h3>
+      <ResponsiveContainer width="100%" height={180}>
+        <BarChart data={items} layout="vertical" barSize={22}>
+          <XAxis type="number" {...AXIS} />
+          <YAxis dataKey="name" type="category" width={88} tick={{ fill: "#6b7280", fontSize: 12 }} stroke="#2a2a3a" />
+          <Tooltip contentStyle={TOOLTIP_STYLE} cursor={{ fill: "rgba(255,255,255,0.02)" }} />
           <Bar dataKey="value" radius={[0, 6, 6, 0]}>
-            {items.map((_, i) => <Cell key={i} fill={CHART_COLORS[i]} />)}
+            <Cell fill="#8b5cf6" />
+            <Cell fill="#f59e0b" />
           </Bar>
         </BarChart>
       </ResponsiveContainer>
