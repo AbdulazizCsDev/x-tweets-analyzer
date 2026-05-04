@@ -1,77 +1,49 @@
-# =========================
 # Python
-# =========================
 __pycache__/
 *.py[cod]
 *.pyo
 *.pyd
 *.so
 *.egg-info/
-dist/
-build/
-.eggs/
 .pytest_cache/
 .mypy_cache/
 .ruff_cache/
 
-# =========================
 # Virtual env
-# =========================
 venv/
 .venv/
 env/
 ENV/
 
-# =========================
-# Streamlit
-# =========================
-.streamlit/secrets.toml
-.streamlit/*.toml
-!.streamlit/config.toml
+# Node / Next.js
+node_modules/
+.next/
+out/
+build/
+dist/
+*.tsbuildinfo
 
-# =========================
-# Environment variables / secrets
-# =========================
-.env
-.env.*
-*.key
-*.pem
-
-# =========================
 # Local databases / data
-# =========================
 *.db
 *.sqlite
 *.sqlite3
+backend/data.db
 
-# =========================
-# Local outputs / generated files
-# =========================
-mentions_network.html
-last_fetch.json
-*.log
+# Environment / secrets
+.env
+.env.*
+.streamlit/secrets.toml
+*.key
+*.pem
 
-# =========================
 # OS / Editor
-# =========================
 .DS_Store
 Thumbs.db
 .vscode/
 .idea/
 *.swp
 
-
-# local DB / data
-*.db
-*.sqlite
-*.sqlite3
-
-# generated artifacts
-last_fetch.json
+# Generated / logs
+*.log
 mentions_network.html
-
-# streamlit secrets (لو عندك)
-.streamlit/secrets.toml
-
-# venv
-venv/
+last_fetch.json
