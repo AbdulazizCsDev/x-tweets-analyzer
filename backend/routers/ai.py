@@ -2,7 +2,7 @@ from fastapi import APIRouter, HTTPException
 import anthropic
 import traceback
 from models import AIInsightRequest, ChatRequest
-from db import get_tweets, get_ai_cache, set_ai_cache
+from db import get_tweets
 from services import claude_service
 
 router = APIRouter()
@@ -45,11 +45,6 @@ def get_insight(kind: str, body: AIInsightRequest):
     if kind not in VALID_KINDS:
         raise HTTPException(400, f"kind غير صالح. الخيارات: {VALID_KINDS}")
 
-    if not body.force_refresh:
-        cached = get_ai_cache(body.account, kind)
-        if cached:
-            return {"data": cached, "cached": True}
-
     tweets = get_tweets(body.account)
     if not tweets:
         raise HTTPException(404, f"لا توجد بيانات للحساب: {body.account}")
@@ -62,9 +57,8 @@ def get_insight(kind: str, body: AIInsightRequest):
     except anthropic.RateLimitError:
         raise HTTPException(429, "تجاوزت حد الاستخدام في Anthropic — انتظر قليلاً وأعد المحاولة")
     except anthropic.APIStatusError as e:
-        detail = f"Claude API {e.status_code}: {e.message}"
         traceback.print_exc()
-        raise HTTPException(e.status_code or 502, detail)
+        raise HTTPException(e.status_code or 502, f"Claude API {e.status_code}: {e.message}")
     except anthropic.APIError as e:
         traceback.print_exc()
         raise HTTPException(502, f"Claude API: {e}")
@@ -72,5 +66,4 @@ def get_insight(kind: str, body: AIInsightRequest):
         traceback.print_exc()
         raise HTTPException(500, f"{type(e).__name__}: {e}")
 
-    set_ai_cache(body.account, kind, result)
-    return {"data": result, "cached": False}
+    return {"data": result}

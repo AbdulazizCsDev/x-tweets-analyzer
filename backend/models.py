@@ -27,7 +27,6 @@ class IngestResponse(BaseModel):
 class AIInsightRequest(BaseModel):
     account: str
     anthropic_key: str
-    force_refresh: bool = False
 
 
 class ChatRequest(BaseModel):

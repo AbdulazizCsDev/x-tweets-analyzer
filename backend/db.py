@@ -37,20 +37,14 @@ def init_db():
                 PRIMARY KEY (id, account)
             );
 
-            CREATE TABLE IF NOT EXISTS ai_cache (
-                account     TEXT,
-                kind        TEXT,
-                payload     TEXT,
-                created_at  TEXT DEFAULT (datetime('now')),
-                PRIMARY KEY (account, kind)
-            );
-
             CREATE TABLE IF NOT EXISTS accounts (
                 handle      TEXT PRIMARY KEY,
                 source      TEXT,
                 tweet_count INTEGER DEFAULT 0,
                 imported_at TEXT DEFAULT (datetime('now'))
             );
+
+            DROP TABLE IF EXISTS ai_cache;
         """)
 
 
@@ -88,28 +82,6 @@ def get_accounts() -> list[dict]:
     with get_conn() as conn:
         rows = conn.execute("SELECT * FROM accounts ORDER BY imported_at DESC").fetchall()
     return [dict(r) for r in rows]
-
-
-def get_ai_cache(account: str, kind: str) -> dict | None:
-    with get_conn() as conn:
-        row = conn.execute(
-            "SELECT payload FROM ai_cache WHERE account=? AND kind=?",
-            (account, kind)
-        ).fetchone()
-    return json.loads(row["payload"]) if row else None
-
-
-def set_ai_cache(account: str, kind: str, payload: dict):
-    with get_conn() as conn:
-        conn.execute("""
-            INSERT OR REPLACE INTO ai_cache (account, kind, payload, created_at)
-            VALUES (?, ?, ?, datetime('now'))
-        """, (account, kind, json.dumps(payload, ensure_ascii=False)))
-
-
-def invalidate_ai_cache(account: str):
-    with get_conn() as conn:
-        conn.execute("DELETE FROM ai_cache WHERE account=?", (account,))
 
 
 init_db()
