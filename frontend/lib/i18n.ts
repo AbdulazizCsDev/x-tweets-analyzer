@@ -59,7 +59,10 @@ const ar = {
   ],
   startBtn: "ابدأ التحليل",
   startSuccess: "تم! جاري التوجيه...",
-  processing: "جاري رفع الأرشيف ومعالجته... قد يستغرق دقيقة أو دقيقتين",
+  processing: "جاري معالجة الأرشيف...",
+  progressReading: "قراءة الأرشيف...",
+  progressExtracting: (i: number, n: number) => `استخراج التغريدات (${i}/${n})...`,
+  progressUploading: "جاري إرسال التغريدات...",
   formError: "أدخل اسم الحساب وارفع ملف ZIP",
   importedTweets: (n: number) => `✓ تم استيراد ${n.toLocaleString("ar")} تغريدة`,
 
@@ -186,7 +189,10 @@ const en: typeof ar = {
   ],
   startBtn: "Start Analysis",
   startSuccess: "Done! Redirecting...",
-  processing: "Uploading and processing archive... this may take 1-2 minutes",
+  processing: "Processing archive...",
+  progressReading: "Reading archive...",
+  progressExtracting: (i: number, n: number) => `Extracting tweets (${i}/${n})...`,
+  progressUploading: "Sending tweets...",
   formError: "Enter an account name and upload a ZIP file",
   importedTweets: (n: number) => `✓ Imported ${n.toLocaleString()} tweets`,
 

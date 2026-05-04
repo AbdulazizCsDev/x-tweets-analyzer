@@ -62,14 +62,19 @@ export default function Home() {
     setStatus("loading");
     setMsg(t.processing);
     try {
-      const res = await uploadArchive(archiveFile, archiveHandle.trim());
+      const res = await uploadArchive(archiveFile, archiveHandle.trim(), (p) => {
+        if (p.phase === "reading") setMsg(t.progressReading);
+        else if (p.phase === "extracting" || p.phase === "parsing")
+          setMsg(t.progressExtracting(p.filesDone + 1, p.filesTotal));
+        else if (p.phase === "done") setMsg(t.progressUploading);
+      });
       setMsg(t.importedTweets(res.count));
       setStatus("success");
       const dest = res.account && res.account !== "unknown" ? res.account : archiveHandle.trim();
       setTimeout(() => router.push(`/dashboard/${dest}`), 1200);
     } catch (e: unknown) {
-      const err = e as { response?: { data?: { detail?: string } } };
-      setMsg(err?.response?.data?.detail || t.errorData);
+      const err = e as { response?: { data?: { detail?: string } }; message?: string };
+      setMsg(err?.response?.data?.detail || err?.message || t.errorData);
       setStatus("error");
     }
   }

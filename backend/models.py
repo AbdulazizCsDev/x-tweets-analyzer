@@ -24,6 +24,11 @@ class IngestResponse(BaseModel):
     source: str
 
 
+class IngestTweetsRequest(BaseModel):
+    account: str
+    tweets: list[dict]
+
+
 class AIInsightRequest(BaseModel):
     account: str
     anthropic_key: str

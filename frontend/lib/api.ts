@@ -1,4 +1,5 @@
 import axios from "axios";
+import { parseArchiveInBrowser, type ProgressUpdate } from "./archive-parser";
 
 function getSessionId(): string {
   if (typeof window === "undefined") return "";
@@ -39,14 +40,21 @@ export interface Account {
 
 export async function uploadArchive(
   file: File,
-  account: string
+  account: string,
+  onProgress?: (p: ProgressUpdate) => void
 ): Promise<IngestResponse> {
-  const fd = new FormData();
-  fd.append("file", file);
-  fd.append("account", account);
-  const { data } = await api.post<IngestResponse>("/ingest/archive", fd);
+  // Parse the archive in the browser so we never upload a multi-GB ZIP.
+  // The user's media stays on their machine; only normalised tweet JSON
+  // (a few MB at most) is sent to the backend.
+  const tweets = await parseArchiveInBrowser(file, onProgress);
+  const { data } = await api.post<IngestResponse>("/ingest/tweets", {
+    account,
+    tweets,
+  });
   return data;
 }
+
+export type { ProgressUpdate } from "./archive-parser";
 
 export async function getAccounts(): Promise<Account[]> {
   const { data } = await api.get<Account[]>("/ingest/accounts");
