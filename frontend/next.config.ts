@@ -4,7 +4,7 @@ const BACKEND_URL = process.env.BACKEND_URL || "http://localhost:8000";
 
 const config: NextConfig = {
   experimental: {
-    middlewareClientMaxBodySize: 500 * 1024 * 1024, // 500MB
+    proxyClientMaxBodySize: 500 * 1024 * 1024, // 500MB
   },
   async rewrites() {
     return [

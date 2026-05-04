@@ -2,6 +2,12 @@ import axios from "axios";
 
 const api = axios.create({ baseURL: "/api" });
 
+// For direct uploads (bypasses Next.js proxy size limit)
+const DIRECT_BACKEND = process.env.NEXT_PUBLIC_BACKEND_URL || "";
+const uploadApi = DIRECT_BACKEND
+  ? axios.create({ baseURL: `${DIRECT_BACKEND}/api` })
+  : api;
+
 export interface IngestResponse {
   account: string;
   count: number;
@@ -22,7 +28,7 @@ export async function uploadArchive(
   const fd = new FormData();
   fd.append("file", file);
   fd.append("account", account);
-  const { data } = await api.post<IngestResponse>("/ingest/archive", fd);
+  const { data } = await uploadApi.post<IngestResponse>("/ingest/archive", fd);
   return data;
 }
 
