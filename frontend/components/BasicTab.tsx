@@ -5,6 +5,7 @@ import {
 } from "recharts";
 import { Heart, Repeat2, MessageCircle } from "lucide-react";
 import { formatNumber } from "@/lib/utils";
+import { useI18n } from "@/lib/i18n-context";
 
 interface Top10Item {
   id: string; text: string; engagement: number;
@@ -51,11 +52,12 @@ export default function BasicTab({ data }: { data: Record<string, unknown> }) {
 
 /* ── Hourly Chart ── */
 function HourlyChart({ data }: { data: { hour: number; avg: number }[] }) {
+  const { t } = useI18n();
   const maxVal = Math.max(...data.map(d => d.avg), 1);
   return (
     <div className="card">
       <h3 className="text-sm font-bold mb-4" style={{ color: "var(--muted)" }}>
-        متوسط التفاعل حسب الساعة
+        {t.chartHourly}
       </h3>
       <ResponsiveContainer width="100%" height={220}>
         <BarChart data={data} barSize={10}>
@@ -75,11 +77,12 @@ function HourlyChart({ data }: { data: { hour: number; avg: number }[] }) {
 
 /* ── Daily Chart ── */
 function DailyChart({ data }: { data: { day: string; avg: number }[] }) {
+  const { t } = useI18n();
   const maxVal = Math.max(...data.map(d => d.avg), 1);
   return (
     <div className="card">
       <h3 className="text-sm font-bold mb-4" style={{ color: "var(--muted)" }}>
-        متوسط التفاعل حسب اليوم
+        {t.chartDaily}
       </h3>
       <ResponsiveContainer width="100%" height={220}>
         <BarChart data={data} barSize={26}>
@@ -99,12 +102,13 @@ function DailyChart({ data }: { data: { day: string; avg: number }[] }) {
 
 /* ── Heatmap ── */
 function Heatmap({ data }: { data: Record<string, Record<string, number>> }) {
+  const { t } = useI18n();
   const days = Object.keys(data);
   const max  = Math.max(...days.flatMap(d => Object.values(data[d])), 1);
   return (
     <div className="card">
       <h3 className="text-sm font-bold mb-4" style={{ color: "var(--muted)" }}>
-        خريطة التفاعل — يوم × ساعة
+        {t.heatmapTitle}
       </h3>
       <div className="overflow-x-auto">
         <table className="w-full text-xs" style={{ minWidth: 600 }}>
@@ -155,10 +159,11 @@ const RANK_GRADIENT = [
 const MEDALS = ["🥇", "🥈", "🥉"];
 
 function Top10({ items }: { items: Top10Item[] }) {
+  const { t } = useI18n();
   return (
     <div className="card overflow-hidden p-0">
       <div className="px-4 py-3 border-b" style={{ borderColor: "var(--border)" }}>
-        <h3 className="font-bold text-sm">أعلى ١٠ تغريدات تفاعلاً</h3>
+        <h3 className="font-bold text-sm">{t.top10Title}</h3>
       </div>
       <div>
         {items.map((t, i) => (
@@ -226,11 +231,12 @@ function EngStat({ icon, count, hover }: { icon: React.ReactNode; count: number;
 
 /* ── Hashtags ── */
 function Hashtags({ items }: { items: Hashtag[] }) {
+  const { t } = useI18n();
   return (
     <div className="card">
-      <h3 className="text-sm font-bold mb-4" style={{ color: "var(--muted)" }}>أكثر الهاشتاقات</h3>
+      <h3 className="text-sm font-bold mb-4" style={{ color: "var(--muted)" }}>{t.hashtagsTitle}</h3>
       {items.length === 0 ? (
-        <p className="text-sm" style={{ color: "var(--muted)" }}>لا توجد هاشتاقات</p>
+        <p className="text-sm" style={{ color: "var(--muted)" }}>{t.noHashtags}</p>
       ) : (
         <div className="space-y-1">
           {items.slice(0, 10).map((h) => (
@@ -242,7 +248,7 @@ function Hashtags({ items }: { items: Hashtag[] }) {
               <span className="text-sm font-semibold" style={{ color: "#a78bfa" }}>#{h.tag}</span>
               <div className="flex items-center gap-3 text-xs" style={{ color: "var(--muted)" }}>
                 <span>{h.count}×</span>
-                <span style={{ color: "#4ade80" }}>{h.avg_eng} متوسط</span>
+                <span style={{ color: "#4ade80" }}>{h.avg_eng}</span>
               </div>
             </div>
           ))}
@@ -254,11 +260,12 @@ function Hashtags({ items }: { items: Hashtag[] }) {
 
 /* ── Mentions ── */
 function Mentions({ items }: { items: Mention[] }) {
+  const { t } = useI18n();
   return (
     <div className="card">
-      <h3 className="text-sm font-bold mb-4" style={{ color: "var(--muted)" }}>أكثر الحسابات ذكراً</h3>
+      <h3 className="text-sm font-bold mb-4" style={{ color: "var(--muted)" }}>{t.mentionsTitle}</h3>
       {items.length === 0 ? (
-        <p className="text-sm" style={{ color: "var(--muted)" }}>لا توجد منشنات</p>
+        <p className="text-sm" style={{ color: "var(--muted)" }}>{t.noMentions}</p>
       ) : (
         <div className="flex flex-wrap gap-2">
           {items.map((m) => (
@@ -283,10 +290,11 @@ function Mentions({ items }: { items: Mention[] }) {
 
 /* ── Words ── */
 function Words({ items }: { items: WordItem[] }) {
+  const { t } = useI18n();
   const max = items[0]?.count || 1;
   return (
     <div className="card">
-      <h3 className="text-sm font-bold mb-4" style={{ color: "var(--muted)" }}>أكثر الكلمات تكراراً</h3>
+      <h3 className="text-sm font-bold mb-4" style={{ color: "var(--muted)" }}>{t.wordsTitle}</h3>
       <div className="space-y-2.5">
         {items.slice(0, 15).map((w) => (
           <div key={w.word} className="flex items-center gap-3 text-sm">
@@ -312,13 +320,14 @@ function Words({ items }: { items: WordItem[] }) {
 
 /* ── Media Impact ── */
 function MediaImpact({ data }: { data: { with_media_avg: number; without_media_avg: number } }) {
+  const { t } = useI18n();
   const items = [
-    { name: "مع وسائط",    value: data.with_media_avg },
-    { name: "بدون وسائط", value: data.without_media_avg },
+    { name: t.withMedia,    value: data.with_media_avg },
+    { name: t.withoutMedia, value: data.without_media_avg },
   ];
   return (
     <div className="card">
-      <h3 className="text-sm font-bold mb-4" style={{ color: "var(--muted)" }}>تأثير الوسائط على التفاعل</h3>
+      <h3 className="text-sm font-bold mb-4" style={{ color: "var(--muted)" }}>{t.mediaTitle}</h3>
       <ResponsiveContainer width="100%" height={180}>
         <BarChart data={items} layout="vertical" barSize={22}>
           <XAxis type="number" {...AXIS} />

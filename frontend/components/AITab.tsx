@@ -7,59 +7,35 @@ import {
   MessageSquare, SendHorizontal, BookOpen,
 } from "lucide-react";
 import { getAIInsight, chatWithAI } from "@/lib/api";
+import { useI18n } from "@/lib/i18n-context";
 
-interface InsightConfig {
-  kind: string; title: string; desc: string;
-  icon: React.ReactNode; color: string; borderHex: string;
-}
+const KINDS = ["content_funnel", "winner_formula", "topic_roi", "action_plan"] as const;
+type Kind = typeof KINDS[number];
 
-const INSIGHTS: InsightConfig[] = [
-  {
-    kind: "content_funnel",
-    title: "قمع المحتوى",
-    desc: "TOFU / MOFU / BOFU — أين تتسرب فرص التحويل؟",
-    icon: <TrendingUp size={18} />,
-    color: "from-blue-600/15 to-blue-900/5",
-    borderHex: "#3b82f620",
-  },
-  {
-    kind: "winner_formula",
-    title: "صيغة الفائزين",
-    desc: "القالب القابل للاستنساخ من أعلى تغريداتك أداءً",
-    icon: <Zap size={18} />,
-    color: "from-amber-600/15 to-amber-900/5",
-    borderHex: "#f59e0b20",
-  },
-  {
-    kind: "topic_roi",
-    title: "مصفوفة المواضيع",
-    desc: "منجم / ذهب / مهدور / ميت — وجّه وقتك للمكان الصحيح",
-    icon: <BarChart2 size={18} />,
-    color: "from-violet-600/15 to-violet-900/5",
-    borderHex: "#8b5cf620",
-  },
-  {
-    kind: "action_plan",
-    title: "خطة الأسبوع",
-    desc: "٧ تغريدات جاهزة للنشر بناءً على أنجح أساليبك",
-    icon: <CalendarDays size={18} />,
-    color: "from-emerald-600/15 to-emerald-900/5",
-    borderHex: "#22c55e20",
-  },
-];
+const ICONS: Record<Kind, React.ReactNode> = {
+  content_funnel: <TrendingUp size={18} />,
+  winner_formula: <Zap size={18} />,
+  topic_roi:      <BarChart2 size={18} />,
+  action_plan:    <CalendarDays size={18} />,
+};
 
-const SAMPLE_QUESTIONS = [
-  "ما هي المواضيع التي تناسب جمهوري أكثر؟",
-  "متى أفضل وقت للنشر بناءً على بياناتي؟",
-  "ما أسلوب الكتابة الذي يميزني عن غيري؟",
-  "كيف أحوّل المتابعين إلى عملاء بمحتواي؟",
-];
+const COLORS: Record<Kind, { bg: string; border: string }> = {
+  content_funnel: { bg: "from-blue-600/15 to-blue-900/5",     border: "#3b82f620" },
+  winner_formula: { bg: "from-amber-600/15 to-amber-900/5",   border: "#f59e0b20" },
+  topic_roi:      { bg: "from-violet-600/15 to-violet-900/5", border: "#8b5cf620" },
+  action_plan:    { bg: "from-emerald-600/15 to-emerald-900/5", border: "#22c55e20" },
+};
 
 function isValidKey(key: string): boolean {
   return key.startsWith("sk-ant-") && key.length >= 40;
 }
 
+function cacheKey(account: string, kind: string) {
+  return `ai_cache:${account}:${kind}`;
+}
+
 export default function AITab({ account, apiKey }: { account: string; apiKey: string }) {
+  const { t } = useI18n();
   const validKey = isValidKey(apiKey);
 
   if (!validKey) {
@@ -74,13 +50,9 @@ export default function AITab({ account, apiKey }: { account: string; apiKey: st
         </div>
         {hasContent ? (
           <>
-            <h3 className="text-lg font-bold mb-2 text-red-400">صيغة المفتاح غير صحيحة</h3>
+            <h3 className="text-lg font-bold mb-2 text-red-400">{t.aiBadKey}</h3>
             <p className="text-sm max-w-md mx-auto leading-relaxed" style={{ color: "var(--muted)" }}>
-              مفاتيح Anthropic تبدأ دائماً بـ{" "}
-              <code className="px-1.5 py-0.5 rounded text-xs" style={{ background: "rgba(139,92,246,0.15)", color: "#a78bfa" }}>
-                sk-ant-
-              </code>
-              {" "}وطولها أكثر من ٤٠ حرفاً.
+              {t.aiBadKeyDesc}
               <br />
               <a
                 href="https://console.anthropic.com/settings/keys"
@@ -88,19 +60,15 @@ export default function AITab({ account, apiKey }: { account: string; apiKey: st
                 className="hover:underline mt-2 inline-block"
                 style={{ color: "#a78bfa" }}
               >
-                احصل على مفتاحك الصحيح من console.anthropic.com →
+                {t.aiGetKey}
               </a>
             </p>
           </>
         ) : (
           <>
-            <h3 className="text-lg font-bold mb-2">أدخل مفتاح Anthropic لتشغيل التحليلات</h3>
+            <h3 className="text-lg font-bold mb-2">{t.aiNoKey}</h3>
             <p className="text-sm max-w-md mx-auto leading-relaxed" style={{ color: "var(--muted)" }}>
-              استخدم زر{" "}
-              <span className="font-semibold" style={{ color: "#fbbf24" }}>⚠ مفتاح AI</span>{" "}
-              في الأعلى لإدخال مفتاح Anthropic.
-              <br />
-              المفتاح يُحفظ في متصفحك فقط — لا يصل إليه أحد.
+              {t.aiNoKeyDesc}
             </p>
           </>
         )}
@@ -111,8 +79,8 @@ export default function AITab({ account, apiKey }: { account: string; apiKey: st
   return (
     <div className="space-y-6">
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
-        {INSIGHTS.map((cfg) => (
-          <InsightCard key={cfg.kind} cfg={cfg} account={account} apiKey={apiKey} />
+        {KINDS.map((kind, i) => (
+          <InsightCard key={kind} kind={kind} index={i} account={account} apiKey={apiKey} />
         ))}
       </div>
       <ChatSection account={account} apiKey={apiKey} />
@@ -122,24 +90,45 @@ export default function AITab({ account, apiKey }: { account: string; apiKey: st
 
 /* ── Insight Card Shell ── */
 
-function InsightCard({ cfg, account, apiKey }: {
-  cfg: InsightConfig; account: string; apiKey: string;
+function InsightCard({ kind, index, account, apiKey }: {
+  kind: Kind; index: number; account: string; apiKey: string;
 }) {
+  const { t } = useI18n();
+  const cfg = t.insights[index];
   const [data, setData] = useState<Record<string, unknown> | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [cached, setCached] = useState(false);
 
-  async function load(force = false) {
-    setLoading(true); setError("");
+  // Hydrate from localStorage on mount.
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const raw = localStorage.getItem(cacheKey(account, kind));
+    if (raw) {
+      try {
+        setData(JSON.parse(raw));
+        setCached(true);
+      } catch {
+        // bad cache entry — ignore
+      }
+    }
+  }, [account, kind]);
+
+  async function load() {
+    setLoading(true); setError(""); setCached(false);
     try {
-      const res = await getAIInsight(account, cfg.kind, apiKey, force);
-      setData(res.data); setCached(res.cached);
+      const res = await getAIInsight(account, kind, apiKey);
+      setData(res.data);
+      try {
+        localStorage.setItem(cacheKey(account, kind), JSON.stringify(res.data));
+      } catch {
+        // quota / privacy mode — silently skip
+      }
     } catch (e: unknown) {
       const err = e as { response?: { data?: { detail?: string }; status?: number }; message?: string };
       const detail = err?.response?.data?.detail;
       const status = err?.response?.status;
-      setError(detail || (status ? `خطأ ${status}: ${err.message}` : err?.message || "خطأ في تشغيل التحليل"));
+      setError(detail || (status ? `${status}: ${err.message}` : err?.message || t.errorData));
     } finally {
       setLoading(false);
     }
@@ -147,13 +136,13 @@ function InsightCard({ cfg, account, apiKey }: {
 
   return (
     <div
-      className={`card bg-gradient-to-br ${cfg.color}`}
-      style={{ borderColor: cfg.borderHex }}
+      className={`card bg-gradient-to-br ${COLORS[kind].bg}`}
+      style={{ borderColor: COLORS[kind].border }}
     >
       <div className="flex items-start justify-between mb-4">
         <div className="flex items-start gap-3">
           <div className="p-2 rounded-xl" style={{ background: "rgba(30,44,85,0.7)", color: "#a78bfa" }}>
-            {cfg.icon}
+            {ICONS[kind]}
           </div>
           <div>
             <h3 className="font-bold">{cfg.title}</h3>
@@ -162,43 +151,43 @@ function InsightCard({ cfg, account, apiKey }: {
         </div>
         {data && (
           <button
-            onClick={() => load(true)}
+            onClick={load}
             className="text-slate-500 hover:text-slate-300 transition flex items-center gap-1 text-xs"
-            title="تحديث"
+            title={t.aiReanalyze}
           >
             <RefreshCw size={12} />
-            {cached && <span>محفوظ</span>}
+            {cached && <span>{t.aiCached}</span>}
           </button>
         )}
       </div>
 
       {!data && !loading && !error && (
         <button
-          onClick={() => load(false)}
+          onClick={load}
           className="w-full py-2.5 rounded-xl font-semibold text-sm transition flex items-center justify-center gap-2 text-white"
           style={{ background: "linear-gradient(135deg, #7c3aed, #6d28d9)" }}
         >
-          <Sparkles size={14} /> تشغيل التحليل
+          <Sparkles size={14} /> {t.aiRunBtn}
         </button>
       )}
 
       {loading && (
         <div className="flex items-center justify-center py-8 text-slate-400 gap-2">
           <Loader2 size={20} className="animate-spin" />
-          <span className="text-sm">جاري التحليل... ٣٠-٦٠ ثانية</span>
+          <span className="text-sm">{t.aiRunning}</span>
         </div>
       )}
 
       {error && (
         <div className="text-red-400 text-sm py-3">
           {error}
-          <button onClick={() => load(false)} className="block mt-2 text-brand-400 hover:underline text-xs">
-            حاول مرة أخرى
+          <button onClick={load} className="block mt-2 text-brand-400 hover:underline text-xs">
+            {t.aiRetry}
           </button>
         </div>
       )}
 
-      {data && <Renderer kind={cfg.kind} data={data} />}
+      {data && <Renderer kind={kind} data={data} />}
     </div>
   );
 }
@@ -225,25 +214,25 @@ function ContentFunnelView({ data }: { data: Record<string, unknown> }) {
   const d = data as unknown as ContentFunnelData;
   const dist = d.distribution;
   const levels = [
-    { key: "TOFU" as const, label: "TOFU", sub: "تعليمي / ترفيهي", color: "#3b82f6", ideal: 70 },
-    { key: "MOFU" as const, label: "MOFU", sub: "رأي / خبرة / قصة", color: "#8b5cf6", ideal: 20 },
-    { key: "BOFU" as const, label: "BOFU", sub: "دعوة لعمل / تحويل", color: "#22c55e", ideal: 10 },
+    { key: "TOFU" as const, label: "TOFU", color: "#3b82f6", ideal: 70 },
+    { key: "MOFU" as const, label: "MOFU", color: "#8b5cf6", ideal: 20 },
+    { key: "BOFU" as const, label: "BOFU", color: "#22c55e", ideal: 10 },
   ];
 
   return (
     <div className="space-y-4 mt-2">
-      {levels.map(({ key, label, sub, color, ideal }) => {
+      {levels.map(({ key, label, color, ideal }) => {
         const bucket = dist?.[key];
         const pct = bucket?.pct ?? 0;
         const gap = pct - ideal;
         return (
           <div key={key}>
             <div className="flex items-center justify-between mb-1 text-sm">
-              <span className="font-semibold">{label} <span className="text-slate-400 font-normal text-xs">— {sub}</span></span>
+              <span className="font-semibold">{label}</span>
               <span className="text-xs text-slate-400">
                 {pct}%{" "}
                 <span style={{ color: gap > 15 ? "#f87171" : gap < -5 ? "#fbbf24" : "#6b7280" }}>
-                  (مثالي {ideal}%)
+                  ({ideal}%)
                 </span>
               </span>
             </div>
@@ -254,8 +243,8 @@ function ContentFunnelView({ data }: { data: Record<string, unknown> }) {
               />
             </div>
             <div className="flex justify-between text-xs text-slate-500">
-              <span>{bucket?.count ?? 0} تغريدة</span>
-              <span>متوسط تفاعل: {bucket?.avg_eng ?? 0}</span>
+              <span>{bucket?.count ?? 0}</span>
+              <span>{bucket?.avg_eng ?? 0}</span>
             </div>
             {bucket?.best_example && (
               <p className="text-xs text-slate-500 italic mt-1 pr-2 border-r border-slate-700">
@@ -296,7 +285,6 @@ function WinnerFormulaView({ data }: { data: Record<string, unknown> }) {
     <div className="space-y-4 mt-2">
       {d.template && (
         <div className="rounded-xl p-3" style={{ background: "rgba(120,53,15,0.2)", border: "1px solid rgba(245,158,11,0.2)" }}>
-          <p className="text-xs font-semibold mb-1" style={{ color: "#fbbf24" }}>القالب الفائز</p>
           <p className="text-sm" style={{ color: "#fef3c7" }}>{d.template}</p>
         </div>
       )}
@@ -309,8 +297,8 @@ function WinnerFormulaView({ data }: { data: Record<string, unknown> }) {
           </div>
           <p className="text-xs text-slate-300 mb-2">{p.description}</p>
           <div className="flex gap-4 text-xs text-slate-500 mb-2">
-            <span>فائزات: <span style={{ color: "#4ade80" }}>{p.winner_avg}</span></span>
-            <span>خاسرات: <span style={{ color: "#f87171" }}>{p.loser_avg}</span></span>
+            <span style={{ color: "#4ade80" }}>{p.winner_avg}</span>
+            <span style={{ color: "#f87171" }}>{p.loser_avg}</span>
           </div>
           {p.example && <p className="text-xs text-slate-500 italic">&ldquo;{p.example.slice(0, 120)}&rdquo;</p>}
         </div>
@@ -318,7 +306,6 @@ function WinnerFormulaView({ data }: { data: Record<string, unknown> }) {
 
       {d.avoid && d.avoid.length > 0 && (
         <div className="rounded-xl p-3" style={{ background: "rgba(127,29,29,0.15)", border: "1px solid rgba(239,68,68,0.15)" }}>
-          <p className="text-xs font-semibold mb-2" style={{ color: "#f87171" }}>تجنّب</p>
           <ul className="space-y-1">
             {d.avoid.map((a, i) => (
               <li key={i} className="text-xs text-slate-400 flex gap-2"><span>✕</span>{a}</li>
@@ -328,11 +315,8 @@ function WinnerFormulaView({ data }: { data: Record<string, unknown> }) {
       )}
 
       {d.ready_examples && d.ready_examples.length > 0 && (
-        <div>
-          <p className="text-xs text-slate-400 font-semibold mb-2">تغريدات جاهزة للنشر</p>
-          <div className="space-y-2">
-            {d.ready_examples.map((ex, i) => <CopyCard key={i} text={ex} />)}
-          </div>
+        <div className="space-y-2">
+          {d.ready_examples.map((ex, i) => <CopyCard key={i} text={ex} />)}
         </div>
       )}
     </div>
@@ -379,8 +363,8 @@ function TopicROIView({ data }: { data: Record<string, unknown> }) {
               </span>
             </div>
             <div className="flex gap-4 text-xs text-slate-500 mb-1.5">
-              <span>{t.count} تغريدة</span>
-              <span>متوسط: {t.avg_eng}</span>
+              <span>{t.count}</span>
+              <span>{t.avg_eng}</span>
               <span className="text-slate-400">{t.trend}</span>
             </div>
             <p className="text-xs text-slate-400">{t.recommendation}</p>
@@ -418,7 +402,7 @@ function ActionPlanView({ data }: { data: Record<string, unknown> }) {
       )}
       {d.quick_win && (
         <div className="rounded-xl p-3 text-sm" style={{ background: "rgba(20,83,45,0.2)", border: "1px solid rgba(34,197,94,0.2)", color: "#86efac" }}>
-          ⚡ <span className="font-semibold">ابدأ اليوم:</span> {d.quick_win}
+          ⚡ {d.quick_win}
         </div>
       )}
 
@@ -457,7 +441,6 @@ function CopyCard({ text }: { text: string }) {
       <button
         onClick={copy}
         className="absolute top-2.5 left-2.5 text-slate-500 hover:text-white transition opacity-0 group-hover:opacity-100"
-        title="نسخ"
       >
         {copied ? <CheckCheck size={13} style={{ color: "#4ade80" }} /> : <Copy size={13} />}
       </button>
@@ -470,6 +453,7 @@ function CopyCard({ text }: { text: string }) {
 interface ChatMessage { role: "user" | "ai"; text: string; }
 
 function ChatSection({ account, apiKey }: { account: string; apiKey: string }) {
+  const { t } = useI18n();
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
@@ -490,7 +474,7 @@ function ChatSection({ account, apiKey }: { account: string; apiKey: string }) {
       setMessages((prev) => [...prev, { role: "ai", text: res.answer }]);
     } catch (e: unknown) {
       const err = e as { response?: { data?: { detail?: string } } };
-      const detail = err?.response?.data?.detail || "حدث خطأ — حاول مرة أخرى";
+      const detail = err?.response?.data?.detail || t.errorData;
       setMessages((prev) => [...prev, { role: "ai", text: detail }]);
     } finally {
       setLoading(false);
@@ -504,20 +488,19 @@ function ChatSection({ account, apiKey }: { account: string; apiKey: string }) {
           <MessageSquare size={18} />
         </div>
         <div>
-          <h3 className="font-bold">اسأل بياناتك</h3>
-          <p className="text-xs text-slate-500">سؤال حر عن تغريداتك — يجيبك الذكاء الاصطناعي</p>
+          <h3 className="font-bold">{t.chatTitle}</h3>
+          <p className="text-xs text-slate-500">{t.chatSubtitle}</p>
         </div>
       </div>
 
-      {/* Sample questions (shown when no messages) */}
       {messages.length === 0 && (
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mb-4">
-          {SAMPLE_QUESTIONS.map((q, i) => (
+          {t.chatQuestions.map((q, i) => (
             <button
               key={i}
               onClick={() => send(q)}
               disabled={loading}
-              className="text-right text-xs px-3 py-2.5 rounded-xl transition disabled:opacity-50"
+              className="text-start text-xs px-3 py-2.5 rounded-xl transition disabled:opacity-50"
               style={{
                 background: "rgba(20,28,56,0.6)",
                 border: "1px solid rgba(30,44,85,0.8)",
@@ -532,7 +515,6 @@ function ChatSection({ account, apiKey }: { account: string; apiKey: string }) {
         </div>
       )}
 
-      {/* Chat messages */}
       {messages.length > 0 && (
         <div className="space-y-3 mb-4 max-h-96 overflow-y-auto px-1">
           {messages.map((m, i) => (
@@ -556,7 +538,7 @@ function ChatSection({ account, apiKey }: { account: string; apiKey: string }) {
                 style={{ background: "rgba(20,28,56,0.8)", border: "1px solid rgba(30,44,85,0.8)" }}
               >
                 <Loader2 size={14} className="animate-spin" />
-                جاري التفكير...
+                {t.chatThinking}
               </div>
             </div>
           )}
@@ -564,13 +546,12 @@ function ChatSection({ account, apiKey }: { account: string; apiKey: string }) {
         </div>
       )}
 
-      {/* Input */}
       <div className="flex gap-2">
         <input
           value={input}
           onChange={(e) => setInput(e.target.value)}
           onKeyDown={(e) => e.key === "Enter" && !e.shiftKey && send()}
-          placeholder="مثال: ما هي المواضيع التي تناسب جمهوري أكثر؟"
+          placeholder={t.chatPlaceholder}
           className="input flex-1 text-sm"
           disabled={loading}
         />

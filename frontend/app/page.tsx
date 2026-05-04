@@ -4,71 +4,30 @@ import { useState, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import {
   Upload, Loader2, CheckCircle, AlertCircle,
-  ChevronLeft, Shield, Zap, BookOpen, Lock,
+  ChevronLeft, ChevronRight, Shield, Zap, BookOpen, Lock,
   BarChart2, CalendarDays, TrendingUp, MessageSquare,
 } from "lucide-react";
 import { uploadArchive, getAccounts, Account } from "@/lib/api";
+import { useI18n } from "@/lib/i18n-context";
+import LangToggle from "@/components/LangToggle";
 
 type Status = "idle" | "loading" | "success" | "error";
 type Step = 1 | 2 | 3;
 
-const DEMO_CARDS = [
-  { text: "الثلاثاء ٩ م — وقتك الذهبي للنشر", tag: "💡 نمط خفي", eng: "3.2K" },
-  { text: "تغريدات القصة الشخصية تجذب ٣× أكثر تفاعلاً", tag: "⚡ صيغة الفائزين", eng: "6.1K" },
-  { text: "٤٠٪ من محتواك لا يصل لجمهورك المستهدف", tag: "📊 قمع المحتوى", eng: "1.8K" },
+const FEATURE_ICONS = [
+  <TrendingUp size={20} key="t" />,
+  <Zap size={20} key="z" />,
+  <BarChart2 size={20} key="b" />,
+  <CalendarDays size={20} key="c" />,
 ];
 
-const FEATURES = [
-  {
-    icon: <TrendingUp size={20} />,
-    title: "قمع المحتوى",
-    desc: "TOFU / MOFU / BOFU — اكتشف أين تتسرب فرص التحويل وكيف تسدّها",
-    color: "#3b82f6",
-    tag: "محتوى ذكي",
-  },
-  {
-    icon: <Zap size={20} />,
-    title: "صيغة الفائزين",
-    desc: "القالب القابل للنسخ من أعلى تغريداتك أداءً — مع أمثلة جاهزة",
-    color: "#f59e0b",
-    tag: "أنماط خفية",
-  },
-  {
-    icon: <BarChart2 size={20} />,
-    title: "مصفوفة المواضيع",
-    desc: "منجم / ذهب / مهدور / ميت — وجّه وقتك للمكان الصحيح",
-    color: "#8b5cf6",
-    tag: "ROI للمحتوى",
-  },
-  {
-    icon: <CalendarDays size={20} />,
-    title: "خطة الأسبوع",
-    desc: "٧ تغريدات جاهزة للنشر بأسلوبك أنت — بناءً على ما نجح فعلاً",
-    color: "#22c55e",
-    tag: "جاهز للنشر",
-  },
-];
-
-const PRIVACY = [
-  {
-    icon: "🔑",
-    title: "مفتاح API في متصفحك فقط",
-    desc: "مفتاح Anthropic يُحفظ في localStorage في متصفحك — لا يصل إليه أحد غيرك",
-  },
-  {
-    icon: "🤖",
-    title: "تحليل عبر مفتاحك أنت",
-    desc: "يُرسل التحليل لـ Anthropic عبر مفتاحك الشخصي — لا مفتاح مشترك، لا اختراق",
-  },
-  {
-    icon: "🚫",
-    title: "لا مشاركة تجارية",
-    desc: "بياناتك لا تُشارك مع أي طرف تجاري — تُستخدم فقط لأغراض التحليل",
-  },
-];
+const FEATURE_COLORS = ["#3b82f6", "#f59e0b", "#8b5cf6", "#22c55e"];
 
 export default function Home() {
   const router = useRouter();
+  const { t, lang } = useI18n();
+  const isAr = lang === "ar";
+
   const [status, setStatus] = useState<Status>("idle");
   const [msg, setMsg] = useState("");
   const [accounts, setAccounts] = useState<Account[]>([]);
@@ -96,23 +55,25 @@ export default function Home() {
 
   async function handleArchive() {
     if (!archiveFile || !archiveHandle.trim()) {
-      setMsg("أدخل اسم الحساب وارفع ملف ZIP");
+      setMsg(t.formError);
       setStatus("error");
       return;
     }
     setStatus("loading");
-    setMsg("جاري معالجة الأرشيف...");
+    setMsg(t.processing);
     try {
       const res = await uploadArchive(archiveFile, archiveHandle.trim());
-      setMsg(`✓ تم استيراد ${res.count.toLocaleString()} تغريدة`);
+      setMsg(t.importedTweets(res.count));
       setStatus("success");
       setTimeout(() => router.push(`/dashboard/${res.account}`), 1200);
     } catch (e: unknown) {
       const err = e as { response?: { data?: { detail?: string } } };
-      setMsg(err?.response?.data?.detail || "خطأ في معالجة الملف");
+      setMsg(err?.response?.data?.detail || t.errorData);
       setStatus("error");
     }
   }
+
+  const ChevronStart = isAr ? ChevronLeft : ChevronRight;
 
   return (
     <div className="min-h-screen">
@@ -122,12 +83,13 @@ export default function Home() {
         <div className="max-w-6xl mx-auto px-6 py-4 flex items-center justify-between">
           <Logo />
           <div className="flex items-center gap-3">
+            <LangToggle />
             <span className="badge badge-green text-xs hidden sm:inline-flex gap-1">
-              <Lock size={10} /> بياناتك محمية
+              <Lock size={10} /> {t.privacyBadge}
             </span>
             {accounts.length > 0 && (
               <button onClick={scrollToUpload} className="badge badge-violet cursor-pointer hover:opacity-80 transition">
-                تحليل جديد
+                {t.newAnalysis}
               </button>
             )}
           </div>
@@ -136,7 +98,6 @@ export default function Home() {
 
       {/* ── Hero ── */}
       <section className="relative min-h-screen flex flex-col items-center justify-center px-6 pt-24 pb-16 overflow-hidden">
-        {/* Background orbs */}
         <div
           className="absolute top-1/4 right-1/3 w-[500px] h-[500px] rounded-full pointer-events-none animate-pulse-orb"
           style={{ background: "radial-gradient(circle, rgba(139,92,246,0.18) 0%, transparent 70%)" }}
@@ -146,33 +107,21 @@ export default function Home() {
           style={{ background: "radial-gradient(circle, rgba(245,158,11,0.10) 0%, transparent 70%)" }}
         />
 
-        {/* Floating demo cards */}
-        <div className="absolute top-32 right-6 w-56 animate-float hidden lg:block" style={{ opacity: 0.55 }}>
-          <DemoCard card={DEMO_CARDS[0]} />
-        </div>
-        <div className="absolute top-48 left-6 w-60 animate-float2 hidden lg:block" style={{ opacity: 0.45 }}>
-          <DemoCard card={DEMO_CARDS[1]} />
-        </div>
-        <div className="absolute bottom-28 right-16 w-52 animate-float3 hidden xl:block" style={{ opacity: 0.40 }}>
-          <DemoCard card={DEMO_CARDS[2]} />
-        </div>
-
-        {/* Hero content */}
         <div className="text-center max-w-2xl relative z-10">
           <div className="inline-flex items-center gap-2 badge badge-violet mb-6 py-1.5 px-4 text-sm animate-fade-in-up">
-            <Zap size={13} /> مدعوم بـ Claude claude-sonnet-4-6
+            <Zap size={13} /> {t.poweredBy}
           </div>
           <h1 className="text-5xl sm:text-6xl md:text-7xl font-black mb-4 leading-tight animate-fade-in-up delay-100">
-            <span className="gradient-text">بين السطور</span>
+            <span className="gradient-text">{t.appName}</span>
           </h1>
           <p className="text-xl sm:text-2xl text-slate-300 mb-2 leading-relaxed animate-fade-in-up delay-200">
-            ما لا تراه في تغريداتك
+            {t.heroTagline}
           </p>
           <p className="text-slate-400 mb-3 animate-fade-in-up delay-200">
-            يراه الذكاء الاصطناعي
+            {t.heroTagline2}
           </p>
           <p className="text-slate-500 text-sm mb-10 max-w-lg mx-auto animate-fade-in-up delay-300">
-            ارفع أرشيف X واكتشف الأنماط الخفية — قرارات واضحة لا وصف فارغ
+            {t.heroDesc}
           </p>
           <div className="animate-fade-in-up delay-400">
             <button
@@ -185,12 +134,11 @@ export default function Home() {
               onMouseEnter={(e) => (e.currentTarget.style.opacity = "0.9")}
               onMouseLeave={(e) => (e.currentTarget.style.opacity = "1")}
             >
-              ابدأ التحليل مجاناً
+              {t.heroBtn}
             </button>
           </div>
         </div>
 
-        {/* Scroll hint */}
         <div className="absolute bottom-8 left-1/2 -translate-x-1/2 text-slate-700 animate-bounce">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
             <path d="M12 5v14M5 12l7 7 7-7" />
@@ -201,35 +149,34 @@ export default function Home() {
       {/* ── Features ── */}
       <section className="py-20 px-6">
         <div className="max-w-5xl mx-auto">
-          <h2 className="text-3xl font-extrabold text-center mb-2">
-            ٤ رؤى تحرك قراراتك
-          </h2>
-          <p className="text-slate-400 text-center mb-12 text-sm">
-            ليس مجرد أرقام — بل إجابات لأسئلة تجارية حقيقية
-          </p>
+          <h2 className="text-3xl font-extrabold text-center mb-2">{t.featuresTitle}</h2>
+          <p className="text-slate-400 text-center mb-12 text-sm">{t.featuresSub}</p>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-            {FEATURES.map((f, i) => (
-              <div
-                key={i}
-                className="card group hover:scale-[1.02] transition-transform cursor-default"
-                style={{ borderColor: f.color + "28" }}
-              >
+            {t.features.map((f, i) => {
+              const color = FEATURE_COLORS[i];
+              return (
                 <div
-                  className="w-10 h-10 rounded-xl flex items-center justify-center mb-3 transition-colors"
-                  style={{ background: f.color + "18", color: f.color }}
+                  key={i}
+                  className="card group hover:scale-[1.02] transition-transform cursor-default"
+                  style={{ borderColor: color + "28" }}
                 >
-                  {f.icon}
+                  <div
+                    className="w-10 h-10 rounded-xl flex items-center justify-center mb-3 transition-colors"
+                    style={{ background: color + "18", color }}
+                  >
+                    {FEATURE_ICONS[i]}
+                  </div>
+                  <h3 className="font-bold mb-1.5">{f.title}</h3>
+                  <p className="text-xs text-slate-400 leading-relaxed mb-3">{f.desc}</p>
+                  <span
+                    className="text-xs font-semibold px-2 py-0.5 rounded-full"
+                    style={{ background: color + "18", color }}
+                  >
+                    {f.tag}
+                  </span>
                 </div>
-                <h3 className="font-bold mb-1.5">{f.title}</h3>
-                <p className="text-xs text-slate-400 leading-relaxed mb-3">{f.desc}</p>
-                <span
-                  className="text-xs font-semibold px-2 py-0.5 rounded-full"
-                  style={{ background: f.color + "18", color: f.color }}
-                >
-                  {f.tag}
-                </span>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </div>
       </section>
@@ -238,10 +185,8 @@ export default function Home() {
       <section className="py-12 px-6">
         <div className="max-w-2xl mx-auto glass text-center py-8 px-6" style={{ borderColor: "rgba(139,92,246,0.2)" }}>
           <MessageSquare size={32} className="mx-auto mb-3" style={{ color: "#a78bfa" }} />
-          <h3 className="text-xl font-bold mb-2">واسأل بياناتك بحرية</h3>
-          <p className="text-slate-400 text-sm">
-            بعد التحليل يمكنك سؤال الذكاء الاصطناعي أي سؤال — "ما المواضيع الأنجح؟"، "متى أنشر؟"، "ما أسلوبي المميز؟"
-          </p>
+          <h3 className="text-xl font-bold mb-2">{t.chatTeaserTitle}</h3>
+          <p className="text-slate-400 text-sm">{t.chatTeaserDesc}</p>
         </div>
       </section>
 
@@ -250,11 +195,15 @@ export default function Home() {
         <div className="max-w-3xl mx-auto">
           <div className="glass py-8 px-6 text-center" style={{ borderColor: "rgba(74,222,128,0.15)" }}>
             <Shield size={34} className="mx-auto mb-3" style={{ color: "#4ade80" }} />
-            <h2 className="text-2xl font-bold mb-1">بياناتك تبقى بين يديك</h2>
-            <p className="text-slate-400 text-sm mb-6">نأخذ الخصوصية بجدية</p>
+            <h2 className="text-2xl font-bold mb-1">{t.privacyTitle}</h2>
+            <p className="text-slate-400 text-sm mb-6">{t.privacySub}</p>
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-              {PRIVACY.map((p, i) => (
-                <div key={i} className="rounded-xl p-4 text-right" style={{ background: "rgba(30,44,85,0.5)" }}>
+              {t.privacy.map((p, i) => (
+                <div
+                  key={i}
+                  className={`rounded-xl p-4 ${isAr ? "text-right" : "text-left"}`}
+                  style={{ background: "rgba(30,44,85,0.5)" }}
+                >
                   <p className="text-2xl mb-2">{p.icon}</p>
                   <p className="font-semibold text-sm mb-1">{p.title}</p>
                   <p className="text-xs text-slate-400 leading-relaxed">{p.desc}</p>
@@ -270,7 +219,7 @@ export default function Home() {
         <div className="max-w-lg mx-auto">
           {accounts.length > 0 && (
             <div className="mb-8 text-center">
-              <p className="text-slate-400 text-sm mb-3">حسابات محللة مسبقاً</p>
+              <p className="text-slate-400 text-sm mb-3">{t.prevAccounts}</p>
               <div className="flex flex-wrap justify-center gap-2">
                 {accounts.map((a) => (
                   <button
@@ -280,7 +229,7 @@ export default function Home() {
                   >
                     @{a.handle}
                     <span className="opacity-60 mr-1">({a.tweet_count.toLocaleString()})</span>
-                    <ChevronLeft size={12} />
+                    <ChevronStart size={12} />
                   </button>
                 ))}
               </div>
@@ -288,28 +237,23 @@ export default function Home() {
           )}
 
           <div className="card" style={{ borderColor: "rgba(139,92,246,0.2)" }}>
-            {/* Card header */}
             <div className="flex items-center gap-2 mb-6">
               <Logo small />
             </div>
 
-            {/* Stepper indicator */}
             <Stepper current={step} />
 
-            {/* Step content */}
             <div className="mt-6">
-
-              {/* Step 1 — Account name */}
               {step === 1 && (
                 <div className="animate-fade-in-up">
                   <label className="block text-sm font-semibold mb-2 text-slate-300">
-                    اسم حساب X (بدون @)
+                    {t.accountLabel}
                   </label>
                   <input
                     value={archiveHandle}
                     onChange={(e) => setArchiveHandle(e.target.value)}
                     onKeyDown={(e) => e.key === "Enter" && nextStep()}
-                    placeholder="مثال: elonmusk"
+                    placeholder={t.accountPlaceholder}
                     className="input mb-4"
                     autoFocus
                   />
@@ -319,12 +263,11 @@ export default function Home() {
                     className="w-full py-3 rounded-xl font-bold transition disabled:opacity-40 text-white"
                     style={{ background: "linear-gradient(135deg, #7c3aed, #6d28d9)" }}
                   >
-                    التالي ←
+                    {t.nextBtn}
                   </button>
                 </div>
               )}
 
-              {/* Step 2 — File upload */}
               {step === 2 && (
                 <div className="animate-fade-in-up">
                   <div
@@ -354,8 +297,8 @@ export default function Home() {
                     ) : (
                       <>
                         <Upload size={28} className="text-slate-500 mx-auto mb-2" />
-                        <p className="text-slate-400 text-sm">اسحب ملف ZIP هنا أو انقر للاختيار</p>
-                        <p className="text-slate-600 text-xs mt-1">بدون فك الضغط</p>
+                        <p className="text-slate-400 text-sm">{t.dropzoneText}</p>
+                        <p className="text-slate-600 text-xs mt-1">{t.dropzoneNote}</p>
                       </>
                     )}
                     <input
@@ -375,7 +318,7 @@ export default function Home() {
                       className="flex-1 py-2.5 rounded-xl border text-slate-400 hover:text-white text-sm font-semibold transition"
                       style={{ borderColor: "#1e2c55" }}
                     >
-                      → رجوع
+                      {t.backBtn}
                     </button>
                     <button
                       onClick={nextStep}
@@ -383,34 +326,25 @@ export default function Home() {
                       className="flex-[2] py-2.5 px-6 rounded-xl font-bold text-sm transition disabled:opacity-40 text-white"
                       style={{ background: "linear-gradient(135deg, #7c3aed, #6d28d9)" }}
                     >
-                      التالي ←
+                      {t.nextBtn}
                     </button>
                   </div>
                 </div>
               )}
 
-              {/* Step 3 — Confirm & analyze */}
               {step === 3 && (
                 <div className="animate-fade-in-up">
                   <div className="rounded-xl p-4 mb-5 text-sm" style={{ background: "rgba(30,44,85,0.5)" }}>
                     <div className="flex justify-between mb-2.5">
-                      <span className="text-slate-400">الحساب</span>
+                      <span className="text-slate-400">{t.stepAccount}</span>
                       <span className="font-bold text-brand-400">@{archiveHandle}</span>
                     </div>
                     <div className="flex justify-between">
-                      <span className="text-slate-400">الملف</span>
+                      <span className="text-slate-400">{t.stepFile}</span>
                       <span className="font-semibold text-xs truncate max-w-44 text-slate-200">
                         {archiveFile?.name}
                       </span>
                     </div>
-                    {archiveFile && (
-                      <div className="flex justify-between mt-2.5">
-                        <span className="text-slate-400">الحجم</span>
-                        <span className="text-xs text-slate-300">
-                          {(archiveFile.size / 1024 / 1024).toFixed(1)} MB
-                        </span>
-                      </div>
-                    )}
                   </div>
 
                   <button
@@ -423,14 +357,14 @@ export default function Home() {
                     }}
                   >
                     {status === "loading" && <Loader2 size={20} className="animate-spin" />}
-                    {status === "success" ? "تم! جاري التوجيه..." : "ابدأ التحليل"}
+                    {status === "success" ? t.startSuccess : t.startBtn}
                   </button>
 
                   <button
                     onClick={() => setStep(2)}
                     className="mt-3 w-full text-slate-500 hover:text-slate-300 text-xs transition"
                   >
-                    → رجوع
+                    {t.backBtn}
                   </button>
 
                   {msg && (
@@ -454,7 +388,7 @@ export default function Home() {
         <div className="flex justify-center mb-2">
           <Logo small />
         </div>
-        <p className="text-slate-600 text-xs mt-1">مدعوم بـ Claude AI — بياناتك خاصة</p>
+        <p className="text-slate-600 text-xs mt-1">{t.footerNote}</p>
       </footer>
     </div>
   );
@@ -463,6 +397,7 @@ export default function Home() {
 /* ── Sub-components ── */
 
 function Logo({ small }: { small?: boolean }) {
+  const { t } = useI18n();
   return (
     <div className="flex items-center gap-2">
       <div
@@ -479,41 +414,18 @@ function Logo({ small }: { small?: boolean }) {
         className="font-extrabold gradient-text"
         style={{ fontSize: small ? "1rem" : "1.15rem" }}
       >
-        بين السطور
+        {t.appName}
       </span>
     </div>
   );
 }
 
-function DemoCard({ card }: { card: { text: string; tag: string; eng: string } }) {
-  return (
-    <div
-      className="rounded-2xl p-3 text-xs"
-      style={{
-        background: "rgba(13,18,40,0.85)",
-        border: "1px solid rgba(139,92,246,0.2)",
-        backdropFilter: "blur(8px)",
-      }}
-    >
-      <div className="flex items-center justify-between mb-2">
-        <span
-          className="px-2 py-0.5 rounded-full text-[10px] font-semibold"
-          style={{ background: "rgba(139,92,246,0.2)", color: "#a78bfa" }}
-        >
-          {card.tag}
-        </span>
-        <span style={{ color: "#f59e0b" }} className="font-bold">{card.eng}</span>
-      </div>
-      <p className="text-slate-300 leading-relaxed">{card.text}</p>
-    </div>
-  );
-}
-
 function Stepper({ current }: { current: Step }) {
+  const { t } = useI18n();
   const steps = [
-    { n: 1, label: "الحساب" },
-    { n: 2, label: "الملف" },
-    { n: 3, label: "التحليل" },
+    { n: 1, label: t.stepAccount },
+    { n: 2, label: t.stepFile },
+    { n: 3, label: t.stepAnalyze },
   ];
   return (
     <div className="flex items-center gap-0">
@@ -550,6 +462,7 @@ function Stepper({ current }: { current: Step }) {
 }
 
 function HowToArchive() {
+  const { t } = useI18n();
   const [open, setOpen] = useState(false);
   return (
     <div className="mb-4 rounded-xl overflow-hidden" style={{ border: "1px solid #1e2c55" }}>
@@ -558,17 +471,15 @@ function HowToArchive() {
         className="w-full flex items-center justify-between px-4 py-3 text-sm font-semibold text-slate-300 hover:text-white transition"
         style={{ background: "rgba(20,28,56,0.6)" }}
       >
-        <span>كيف تنزّل أرشيفك من X؟</span>
+        <span>{t.howToTitle}</span>
         <span className="text-slate-500 text-xs">{open ? "▲" : "▼"}</span>
       </button>
       {open && (
         <div className="px-4 pb-4 pt-2 text-sm text-slate-400" style={{ background: "rgba(13,18,40,0.5)" }}>
           <ol className="list-decimal list-inside space-y-2 leading-relaxed">
-            <li>افتح X (تويتر) وانتقل إلى <span className="text-slate-300 font-medium">الإعدادات</span></li>
-            <li>اختر <span className="text-slate-300 font-medium">حسابك</span> ← <span className="text-slate-300 font-medium">نزّل أرشيفاً من بياناتك</span></li>
-            <li>أدخل كلمة مرورك وانتظر رسالة البريد الإلكتروني <span className="text-slate-500 text-xs">(قد تصل خلال ٢٤ ساعة)</span></li>
-            <li>افتح الرسالة ونزّل ملف ZIP</li>
-            <li>ارفعه هنا مباشرةً <span className="text-amber-400 font-semibold">بدون فك الضغط</span></li>
+            {t.howToSteps.map((step, i) => (
+              <li key={i}>{step}</li>
+            ))}
           </ol>
         </div>
       )}

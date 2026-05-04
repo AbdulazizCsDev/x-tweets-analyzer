@@ -1,37 +1,41 @@
+"use client";
+
 import { formatNumber } from "@/lib/utils";
+import { useI18n } from "@/lib/i18n-context";
 
 interface Stat { value: string; label: string; glow?: string; }
 
 export default function StatsRow({ summary }: { summary: Record<string, number | string> }) {
+  const { t } = useI18n();
   const stats: Stat[] = [
     {
       value: formatNumber(summary.total_engagement as number),
-      label: "إجمالي التفاعل",
+      label: t.statEngagement,
       glow: "rgba(244,114,182,0.6)",
     },
     {
       value: formatNumber(summary.total_impressions as number),
-      label: "المشاهدات",
+      label: t.statImpressions,
       glow: "rgba(96,165,250,0.6)",
     },
     {
       value: (summary.avg_engagement as number).toFixed(0),
-      label: "متوسط/تغريدة",
+      label: t.statAvg,
       glow: "rgba(74,222,128,0.6)",
     },
     {
       value: `${summary.best_hour}:00`,
-      label: "أفضل ساعة",
+      label: t.statHour,
       glow: "rgba(251,191,36,0.6)",
     },
     {
       value: summary.best_day as string,
-      label: "أفضل يوم",
+      label: t.statDay,
       glow: "rgba(167,139,250,0.6)",
     },
     {
       value: `${summary.with_media_pct}%`,
-      label: "نسبة الوسائط",
+      label: t.statMedia,
       glow: "rgba(34,211,238,0.6)",
     },
   ];

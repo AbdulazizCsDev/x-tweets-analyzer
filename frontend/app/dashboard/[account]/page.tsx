@@ -2,17 +2,22 @@
 
 import { useState, useEffect, use } from "react";
 import { useRouter } from "next/navigation";
-import { ArrowRight, Sparkles, BarChart3, BookOpen } from "lucide-react";
+import { ArrowRight, ArrowLeft, Sparkles, BarChart3, BookOpen } from "lucide-react";
 import { getAnalytics } from "@/lib/api";
+import { useI18n } from "@/lib/i18n-context";
 import StatsRow from "@/components/StatsRow";
 import BasicTab from "@/components/BasicTab";
 import AITab from "@/components/AITab";
+import LangToggle from "@/components/LangToggle";
 
 type Tab = "basic" | "ai";
 
 export default function Dashboard({ params }: { params: Promise<{ account: string }> }) {
   const { account } = use(params);
   const router = useRouter();
+  const { t, lang } = useI18n();
+  const isAr = lang === "ar";
+  const BackIcon = isAr ? ArrowRight : ArrowLeft;
 
   const [analytics, setAnalytics] = useState<Record<string, unknown> | null>(null);
   const [tab, setTab] = useState<Tab>("basic");
@@ -29,9 +34,9 @@ export default function Dashboard({ params }: { params: Promise<{ account: strin
     setLoading(true);
     getAnalytics(account)
       .then(setAnalytics)
-      .catch((e) => setError(e?.response?.data?.detail || "خطأ في جلب البيانات"))
+      .catch((e) => setError(e?.response?.data?.detail || t.errorData))
       .finally(() => setLoading(false));
-  }, [account]);
+  }, [account, t.errorData]);
 
   function saveKey(key: string) {
     setAnthropicKey(key);
@@ -47,7 +52,7 @@ export default function Dashboard({ params }: { params: Promise<{ account: strin
             className="h-10 w-10 border-2 border-t-transparent rounded-full mx-auto mb-4 animate-spin"
             style={{ borderColor: "#8b5cf6", borderTopColor: "transparent" }}
           />
-          <p style={{ color: "var(--muted)" }} className="text-sm">جاري تحميل التحليلات...</p>
+          <p style={{ color: "var(--muted)" }} className="text-sm">{t.loading}</p>
         </div>
       </div>
     );
@@ -57,9 +62,9 @@ export default function Dashboard({ params }: { params: Promise<{ account: strin
     return (
       <div className="min-h-screen flex items-center justify-center p-6">
         <div className="card max-w-md text-center">
-          <p className="text-red-400 mb-4">{error || "لا توجد بيانات"}</p>
+          <p className="text-red-400 mb-4">{error || t.noData}</p>
           <button onClick={() => router.push("/")} className="text-brand-400 hover:underline text-sm">
-            رجوع للصفحة الرئيسية
+            {t.goHome}
           </button>
         </div>
       </div>
@@ -71,7 +76,6 @@ export default function Dashboard({ params }: { params: Promise<{ account: strin
   return (
     <main className="min-h-screen pb-16">
 
-      {/* ── Cover gradient ── */}
       <div
         className="h-20 relative overflow-hidden"
         style={{ background: "linear-gradient(135deg, #0a0010 0%, #1a0035 40%, #0a0018 100%)" }}
@@ -88,7 +92,6 @@ export default function Dashboard({ params }: { params: Promise<{ account: strin
             background: "radial-gradient(ellipse 50% 80% at 80% 40%, rgba(245,158,11,0.12) 0%, transparent 60%)",
           }}
         />
-        {/* Subtle grid lines */}
         <div
           className="absolute inset-0 opacity-10"
           style={{
@@ -98,7 +101,6 @@ export default function Dashboard({ params }: { params: Promise<{ account: strin
         />
       </div>
 
-      {/* ── Sticky nav ── */}
       <header
         className="sticky top-0 z-30 border-b"
         style={{
@@ -116,7 +118,7 @@ export default function Dashboard({ params }: { params: Promise<{ account: strin
               onMouseEnter={(e) => (e.currentTarget.style.color = "#e9ecef")}
               onMouseLeave={(e) => (e.currentTarget.style.color = "var(--muted)")}
             >
-              <ArrowRight size={18} />
+              <BackIcon size={18} />
             </button>
 
             <div
@@ -129,53 +131,49 @@ export default function Dashboard({ params }: { params: Promise<{ account: strin
               >
                 <BookOpen size={12} className="text-white" />
               </div>
-              <span className="font-extrabold text-sm gradient-text hidden sm:block">بين السطور</span>
+              <span className="font-extrabold text-sm gradient-text hidden sm:block">{t.appName}</span>
             </div>
 
             <div>
               <h1 className="text-sm font-bold leading-tight">@{account}</h1>
               <p className="text-xs" style={{ color: "var(--muted)" }}>
-                {(summary.total_tweets as number).toLocaleString()} تغريدة
+                {(summary.total_tweets as number).toLocaleString()} {t.tweetsAnalyzed}
               </p>
             </div>
           </div>
 
-          <KeyInput value={anthropicKey} onChange={saveKey} />
+          <div className="flex items-center gap-2">
+            <LangToggle compact />
+            <KeyInput value={anthropicKey} onChange={saveKey} />
+          </div>
         </div>
 
-        {/* Tabs — X style */}
         <div className="max-w-5xl mx-auto px-5 flex">
-          <TabBtn active={tab === "basic"} onClick={() => setTab("basic")} icon={<BarChart3 size={15} />} label="التحليلات" />
-          <TabBtn active={tab === "ai"} onClick={() => setTab("ai")} icon={<Sparkles size={15} />} label="رؤى AI" />
+          <TabBtn active={tab === "basic"} onClick={() => setTab("basic")} icon={<BarChart3 size={15} />} label={t.tabAnalytics} />
+          <TabBtn active={tab === "ai"} onClick={() => setTab("ai")} icon={<Sparkles size={15} />} label={t.tabAI} />
         </div>
       </header>
 
-      {/* ── Profile info row ── */}
       <div
         className="border-b"
         style={{ borderColor: "var(--border)", background: "var(--surface)" }}
       >
         <div className="max-w-5xl mx-auto px-5 py-4 flex items-center gap-4">
-          {/* Avatar */}
           <div
             className="w-14 h-14 rounded-full flex items-center justify-center text-2xl font-black text-white flex-shrink-0 -mt-8 ring-4"
-            style={{
-              background: "linear-gradient(135deg,#8b5cf6,#6d28d9)",
-              ringColor: "var(--bg)",
-            }}
+            style={{ background: "linear-gradient(135deg,#8b5cf6,#6d28d9)" }}
           >
             {account[0]?.toUpperCase() ?? "X"}
           </div>
           <div>
             <p className="font-black text-base leading-tight">@{account}</p>
             <p className="text-xs mt-0.5" style={{ color: "var(--muted)" }}>
-              محلل بواسطة بين السطور · Claude claude-sonnet-4-6
+              {t.appName}
             </p>
           </div>
         </div>
       </div>
 
-      {/* ── Content ── */}
       <div className="max-w-5xl mx-auto px-5 pt-5">
         <StatsRow summary={summary} />
 
@@ -188,7 +186,6 @@ export default function Dashboard({ params }: { params: Promise<{ account: strin
   );
 }
 
-/* ── Tab Button — X style ── */
 function TabBtn({ active, onClick, icon, label }: {
   active: boolean; onClick: () => void; icon: React.ReactNode; label: string;
 }) {
@@ -208,16 +205,16 @@ function TabBtn({ active, onClick, icon, label }: {
   );
 }
 
-/* ── Anthropic Key Input ── */
 function isValidKey(key: string) {
   return key.startsWith("sk-ant-") && key.length >= 40;
 }
 
 function KeyInput({ value, onChange }: { value: string; onChange: (v: string) => void }) {
+  const { t } = useI18n();
   const [open, setOpen] = useState(false);
   const valid = isValidKey(value);
   const badgeClass = valid ? "badge-green" : value.length > 0 ? "badge-red" : "badge-yellow";
-  const label = valid ? "✓ Anthropic" : value.length > 0 ? "✕ مفتاح خاطئ" : "⚠ مفتاح AI";
+  const label = valid ? t.keyValid : value.length > 0 ? t.keyInvalid : t.keyEmpty;
 
   return (
     <div className="relative">
@@ -232,9 +229,9 @@ function KeyInput({ value, onChange }: { value: string; onChange: (v: string) =>
           className="absolute left-0 top-10 card w-80 z-40"
           style={{ borderColor: "rgba(139,92,246,0.25)" }}
         >
-          <p className="text-sm font-bold mb-1">مفتاح Anthropic API</p>
+          <p className="text-sm font-bold mb-1">{t.keyTitle}</p>
           <p className="text-xs mb-3" style={{ color: "var(--muted)" }}>
-            مطلوب لتحليلات AI. يُحفظ في متصفحك فقط — لا يُرسل لأي طرف.
+            {t.keyDesc}
           </p>
           <input
             type="password"
@@ -249,7 +246,7 @@ function KeyInput({ value, onChange }: { value: string; onChange: (v: string) =>
             className="text-xs hover:underline"
             style={{ color: "#a78bfa" }}
           >
-            احصل على مفتاحك من console.anthropic.com →
+            {t.keyLink}
           </a>
         </div>
       )}

@@ -52,13 +52,11 @@ export async function chatWithAI(
 export async function getAIInsight(
   account: string,
   kind: string,
-  anthropicKey: string,
-  forceRefresh = false
+  anthropicKey: string
 ) {
   const { data } = await api.post(`/ai/${kind}`, {
     account,
     anthropic_key: anthropicKey,
-    force_refresh: forceRefresh,
   });
   return data;
 }
