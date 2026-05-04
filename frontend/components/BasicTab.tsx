@@ -4,7 +4,7 @@ import {
   BarChart, Bar, XAxis, YAxis, ResponsiveContainer, Tooltip, Cell,
 } from "recharts";
 import { Heart, Repeat2, MessageCircle } from "lucide-react";
-import { formatNumber } from "@/lib/utils";
+import { formatNumber, translateDay } from "@/lib/utils";
 import { useI18n } from "@/lib/i18n-context";
 
 interface Top10Item {
@@ -77,7 +77,8 @@ function HourlyChart({ data }: { data: { hour: number; avg: number }[] }) {
 
 /* ── Daily Chart ── */
 function DailyChart({ data }: { data: { day: string; avg: number }[] }) {
-  const { t } = useI18n();
+  const { t, lang } = useI18n();
+  const translated = data.map(d => ({ ...d, day: translateDay(d.day, lang, true) }));
   const maxVal = Math.max(...data.map(d => d.avg), 1);
   return (
     <div className="card">
@@ -85,12 +86,12 @@ function DailyChart({ data }: { data: { day: string; avg: number }[] }) {
         {t.chartDaily}
       </h3>
       <ResponsiveContainer width="100%" height={220}>
-        <BarChart data={data} barSize={26}>
+        <BarChart data={translated} barSize={26}>
           <XAxis dataKey="day" {...AXIS} />
           <YAxis {...AXIS} />
           <Tooltip contentStyle={TOOLTIP_STYLE} cursor={{ fill: "rgba(245,158,11,0.06)" }} />
           <Bar dataKey="avg" radius={[4, 4, 0, 0]}>
-            {data.map((d, i) => (
+            {translated.map((d, i) => (
               <Cell key={i} fill={`rgba(245,158,11,${0.3 + (d.avg / maxVal) * 0.7})`} />
             ))}
           </Bar>
@@ -102,7 +103,7 @@ function DailyChart({ data }: { data: { day: string; avg: number }[] }) {
 
 /* ── Heatmap ── */
 function Heatmap({ data }: { data: Record<string, Record<string, number>> }) {
-  const { t } = useI18n();
+  const { t, lang } = useI18n();
   const days = Object.keys(data);
   const max  = Math.max(...days.flatMap(d => Object.values(data[d])), 1);
   return (
@@ -123,7 +124,7 @@ function Heatmap({ data }: { data: Record<string, Record<string, number>> }) {
           <tbody>
             {days.map((d) => (
               <tr key={d}>
-                <td className="p-1 font-semibold" style={{ color: "var(--muted)" }}>{d}</td>
+                <td className="p-1 font-semibold" style={{ color: "var(--muted)" }}>{translateDay(d, lang, true)}</td>
                 {Array.from({ length: 24 }).map((_, h) => {
                   const v = data[d]?.[h.toString()] || 0;
                   const pct = v / max;
@@ -175,6 +176,7 @@ function Top10({ items }: { items: Top10Item[] }) {
 }
 
 function TweetCard({ tweet, rank }: { tweet: Top10Item; rank: number }) {
+  const { lang } = useI18n();
   const gradient = RANK_GRADIENT[rank - 1] ?? "linear-gradient(135deg,#8b5cf6,#6d28d9)";
   return (
     <div className="x-tweet">
@@ -198,7 +200,7 @@ function TweetCard({ tweet, rank }: { tweet: Top10Item; rank: number }) {
             className="text-xs font-black px-2 py-0.5 rounded-full flex-shrink-0"
             style={{ background: "rgba(139,92,246,0.1)", color: "#a78bfa" }}
           >
-            {formatNumber(tweet.engagement)}
+            {formatNumber(tweet.engagement, lang)}
           </span>
         </div>
 
@@ -218,13 +220,14 @@ function TweetCard({ tweet, rank }: { tweet: Top10Item; rank: number }) {
 }
 
 function EngStat({ icon, count, hover }: { icon: React.ReactNode; count: number; hover: string }) {
+  const { lang } = useI18n();
   return (
     <span
       className={`flex items-center gap-1.5 text-xs transition cursor-default select-none ${hover}`}
       style={{ color: "var(--muted)" }}
     >
       {icon}
-      {formatNumber(count)}
+      {formatNumber(count, lang)}
     </span>
   );
 }

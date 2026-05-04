@@ -1,8 +1,11 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from routers import ingest, analytics, ai
+from db import init_db
 
 app = FastAPI(title="X Tweets Analyzer API", version="2.0.0")
+
+init_db()
 
 app.add_middleware(
     CORSMiddleware,

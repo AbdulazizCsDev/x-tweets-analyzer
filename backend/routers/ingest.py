@@ -13,8 +13,11 @@ _CHUNK = 1024 * 1024  # 1 MB chunks to avoid memory bloat / Windows socket buffe
 @router.post("/archive", response_model=IngestResponse)
 async def ingest_archive(
     file: UploadFile = File(...),
-    account: str = Form("unknown"),
+    account: str = Form(""),
 ):
+    if not account.strip():
+        raise HTTPException(400, "اسم الحساب مطلوب")
+    account = account.strip().lower()
     if not file.filename.endswith(".zip"):
         raise HTTPException(400, "الملف يجب أن يكون ZIP")
 

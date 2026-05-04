@@ -3,7 +3,7 @@ export type Lang = "ar" | "en";
 const ar = {
   // ── App ──────────────────────────────────────────────────────────────────
   appName: "بين السطور",
-  poweredBy: "مدعوم بـ Claude claude-sonnet-4-6",
+ 
 
   // ── Nav ──────────────────────────────────────────────────────────────────
   privacyBadge: "بياناتك محمية",
@@ -11,9 +11,9 @@ const ar = {
 
   // ── Hero ─────────────────────────────────────────────────────────────────
   heroTagline: "ما لا تراه في تغريداتك",
-  heroTagline2: "يراه الذكاء الاصطناعي",
+  heroTagline2: "استطيع أن أراه",
   heroDesc: "ارفع أرشيف X واكتشف الأنماط الخفية — قرارات واضحة لا وصف فارغ",
-  heroBtn: "ابدأ التحليل مجاناً",
+  heroBtn: "ابدأ التحليل",
 
   // ── Features ─────────────────────────────────────────────────────────────
   featuresTitle: "٤ رؤى تحرك قراراتك",
@@ -136,15 +136,15 @@ const ar = {
 
 const en: typeof ar = {
   appName: "Between the Lines",
-  poweredBy: "Powered by Claude claude-sonnet-4-6",
+  
 
   privacyBadge: "Your data is protected",
   newAnalysis: "New Analysis",
 
   heroTagline: "What you can't see in your tweets",
-  heroTagline2: "AI can",
+  heroTagline2: "I can see it now",
   heroDesc: "Upload your X archive and discover hidden patterns — clear decisions, not empty descriptions",
-  heroBtn: "Start Free Analysis",
+  heroBtn: "Start Analysis",
 
   featuresTitle: "4 Insights That Drive Decisions",
   featuresSub: "Not just numbers — answers to real business questions",

@@ -65,7 +65,8 @@ export default function Home() {
       const res = await uploadArchive(archiveFile, archiveHandle.trim());
       setMsg(t.importedTweets(res.count));
       setStatus("success");
-      setTimeout(() => router.push(`/dashboard/${res.account}`), 1200);
+      const dest = res.account && res.account !== "unknown" ? res.account : archiveHandle.trim();
+      setTimeout(() => router.push(`/dashboard/${dest}`), 1200);
     } catch (e: unknown) {
       const err = e as { response?: { data?: { detail?: string } } };
       setMsg(err?.response?.data?.detail || t.errorData);
@@ -108,9 +109,7 @@ export default function Home() {
         />
 
         <div className="text-center max-w-2xl relative z-10">
-          <div className="inline-flex items-center gap-2 badge badge-violet mb-6 py-1.5 px-4 text-sm animate-fade-in-up">
-            <Zap size={13} /> {t.poweredBy}
-          </div>
+          
           <h1 className="text-5xl sm:text-6xl md:text-7xl font-black mb-4 leading-tight animate-fade-in-up delay-100">
             <span className="gradient-text">{t.appName}</span>
           </h1>
