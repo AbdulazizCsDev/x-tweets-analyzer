@@ -1,6 +1,6 @@
 import os
 import tempfile
-from fastapi import APIRouter, UploadFile, File, Form, HTTPException
+from fastapi import APIRouter, UploadFile, File, Form, Header, HTTPException
 from models import IngestResponse
 from db import upsert_tweets, get_accounts
 from services.archive_parser import parse_archive
@@ -14,9 +14,12 @@ _CHUNK = 4 * 1024 * 1024  # 4 MB chunks for faster processing
 async def ingest_archive(
     file: UploadFile = File(...),
     account: str = Form(""),
+    x_session_id: str = Header(""),
 ):
     if not account.strip():
         raise HTTPException(400, "اسم الحساب مطلوب")
+    if not x_session_id.strip():
+        raise HTTPException(400, "session_id مطلوب")
     account = account.strip().lower()
     if not file.filename.endswith(".zip"):
         raise HTTPException(400, "الملف يجب أن يكون ZIP")
@@ -44,11 +47,11 @@ async def ingest_archive(
     if not tweets:
         raise HTTPException(422, "لم يتم العثور على تغريدات في الأرشيف")
 
-    upsert_tweets(tweets, handle)
+    upsert_tweets(tweets, handle, x_session_id)
 
     return IngestResponse(account=handle, count=len(tweets), source="archive")
 
 
 @router.get("/accounts")
-def list_accounts():
-    return get_accounts()
+def list_accounts(x_session_id: str = Header("")):
+    return get_accounts(x_session_id)

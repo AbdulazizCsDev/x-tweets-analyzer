@@ -1,4 +1,4 @@
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, Header, HTTPException
 import anthropic
 import traceback
 from models import AIInsightRequest, ChatRequest
@@ -18,11 +18,11 @@ def list_kinds():
 # /chat must be defined BEFORE /{kind} — FastAPI matches routes in order
 # and /{kind} would swallow /chat if it came first.
 @router.post("/chat")
-def chat_endpoint(body: ChatRequest):
+def chat_endpoint(body: ChatRequest, x_session_id: str = Header("")):
     if not body.message.strip():
         raise HTTPException(400, "الرسالة فارغة")
 
-    tweets = get_tweets(body.account)
+    tweets = get_tweets(body.account, x_session_id)
     if not tweets:
         raise HTTPException(404, f"لا توجد بيانات للحساب: {body.account}")
 
@@ -41,11 +41,11 @@ def chat_endpoint(body: ChatRequest):
 
 
 @router.post("/{kind}")
-def get_insight(kind: str, body: AIInsightRequest):
+def get_insight(kind: str, body: AIInsightRequest, x_session_id: str = Header("")):
     if kind not in VALID_KINDS:
         raise HTTPException(400, f"kind غير صالح. الخيارات: {VALID_KINDS}")
 
-    tweets = get_tweets(body.account)
+    tweets = get_tweets(body.account, x_session_id)
     if not tweets:
         raise HTTPException(404, f"لا توجد بيانات للحساب: {body.account}")
 

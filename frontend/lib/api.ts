@@ -1,12 +1,32 @@
 import axios from "axios";
 
+function getSessionId(): string {
+  if (typeof window === "undefined") return "";
+  let sid = localStorage.getItem("x_session_id");
+  if (!sid) {
+    sid = crypto.randomUUID();
+    localStorage.setItem("x_session_id", sid);
+  }
+  return sid;
+}
+
 const api = axios.create({ baseURL: "/api" });
+api.interceptors.request.use((config) => {
+  config.headers["x-session-id"] = getSessionId();
+  return config;
+});
 
 // For direct uploads (bypasses Next.js proxy size limit)
 const DIRECT_BACKEND = process.env.NEXT_PUBLIC_BACKEND_URL || "";
 const uploadApi = DIRECT_BACKEND
   ? axios.create({ baseURL: `${DIRECT_BACKEND}/api` })
   : api;
+if (DIRECT_BACKEND) {
+  uploadApi.interceptors.request.use((config) => {
+    config.headers["x-session-id"] = getSessionId();
+    return config;
+  });
+}
 
 export interface IngestResponse {
   account: string;
