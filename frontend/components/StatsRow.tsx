@@ -1,20 +1,25 @@
 "use client";
 
-import { formatNumber } from "@/lib/utils";
+import { formatNumber, translateDay } from "@/lib/utils";
 import { useI18n } from "@/lib/i18n-context";
 
 interface Stat { value: string; label: string; glow?: string; }
 
+const AR_TO_EN_DAY: Record<string, string> = {
+  "الأحد": "Sunday", "الاثنين": "Monday", "الثلاثاء": "Tuesday",
+  "الأربعاء": "Wednesday", "الخميس": "Thursday", "الجمعة": "Friday", "السبت": "Saturday",
+};
+
 export default function StatsRow({ summary }: { summary: Record<string, number | string> }) {
-  const { t } = useI18n();
+  const { t, lang } = useI18n();
   const stats: Stat[] = [
     {
-      value: formatNumber(summary.total_engagement as number),
+      value: formatNumber(summary.total_engagement as number, lang),
       label: t.statEngagement,
       glow: "rgba(244,114,182,0.6)",
     },
     {
-      value: formatNumber(summary.total_impressions as number),
+      value: formatNumber(summary.total_impressions as number, lang),
       label: t.statImpressions,
       glow: "rgba(96,165,250,0.6)",
     },
@@ -29,7 +34,7 @@ export default function StatsRow({ summary }: { summary: Record<string, number |
       glow: "rgba(251,191,36,0.6)",
     },
     {
-      value: summary.best_day as string,
+      value: translateDay(summary.best_day as string, lang),
       label: t.statDay,
       glow: "rgba(167,139,250,0.6)",
     },

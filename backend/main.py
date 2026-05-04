@@ -2,16 +2,17 @@ import os
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from routers import ingest, analytics, ai
+from db import init_db
 
 app = FastAPI(title="X Tweets Analyzer API", version="2.0.0")
 
-_origins = ["http://localhost:3000", "http://127.0.0.1:3000"]
-if os.environ.get("FRONTEND_URL"):
-    _origins.append(os.environ["FRONTEND_URL"])
+init_db()
+
+ALLOWED_ORIGINS = os.getenv("ALLOWED_ORIGINS", "http://localhost:3000,http://127.0.0.1:3000").split(",")
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=_origins,
+    allow_origins=ALLOWED_ORIGINS,
     allow_methods=["*"],
     allow_headers=["*"],
 )
