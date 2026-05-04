@@ -7,7 +7,7 @@ from services.archive_parser import parse_archive
 
 router = APIRouter()
 
-_CHUNK = 1024 * 1024  # 1 MB chunks to avoid memory bloat / Windows socket buffer errors
+_CHUNK = 4 * 1024 * 1024  # 4 MB chunks for faster processing
 
 
 @router.post("/archive", response_model=IngestResponse)
