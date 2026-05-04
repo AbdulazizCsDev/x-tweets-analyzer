@@ -10,23 +10,19 @@ function getSessionId(): string {
   return sid;
 }
 
-const api = axios.create({ baseURL: "/api" });
+// In production set NEXT_PUBLIC_BACKEND_URL on Vercel to the Railway backend URL
+// (e.g. https://x-analyzer-api.up.railway.app). The browser then talks
+// directly to Railway, bypassing Vercel's 60s proxy timeout — important
+// because AI insight calls can take 90–180s — and also avoids the proxy's
+// upload size limit.
+const DIRECT_BACKEND = process.env.NEXT_PUBLIC_BACKEND_URL || "";
+const API_BASE = DIRECT_BACKEND ? `${DIRECT_BACKEND}/api` : "/api";
+
+const api = axios.create({ baseURL: API_BASE, timeout: 300_000 });
 api.interceptors.request.use((config) => {
   config.headers["x-session-id"] = getSessionId();
   return config;
 });
-
-// For direct uploads (bypasses Next.js proxy size limit)
-const DIRECT_BACKEND = process.env.NEXT_PUBLIC_BACKEND_URL || "";
-const uploadApi = DIRECT_BACKEND
-  ? axios.create({ baseURL: `${DIRECT_BACKEND}/api` })
-  : api;
-if (DIRECT_BACKEND) {
-  uploadApi.interceptors.request.use((config) => {
-    config.headers["x-session-id"] = getSessionId();
-    return config;
-  });
-}
 
 export interface IngestResponse {
   account: string;
@@ -48,7 +44,7 @@ export async function uploadArchive(
   const fd = new FormData();
   fd.append("file", file);
   fd.append("account", account);
-  const { data } = await uploadApi.post<IngestResponse>("/ingest/archive", fd);
+  const { data } = await api.post<IngestResponse>("/ingest/archive", fd);
   return data;
 }
 
