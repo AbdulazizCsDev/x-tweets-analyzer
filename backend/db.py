@@ -1,9 +1,12 @@
+import os
 import sqlite3
 import json
 from contextlib import contextmanager
 from pathlib import Path
 
-DB_PATH = Path(__file__).parent / "data.db"
+_data_dir = Path(os.environ.get("DATA_DIR", str(Path(__file__).parent)))
+_data_dir.mkdir(parents=True, exist_ok=True)
+DB_PATH = _data_dir / "data.db"
 
 
 @contextmanager
