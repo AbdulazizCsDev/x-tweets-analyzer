@@ -7,10 +7,10 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 COPY . .
 
-RUN mkdir -p /data
+RUN mkdir -p /data && chmod +x /app/start.sh
 
 ENV DATA_DIR=/data
 
 EXPOSE 8000
 
-CMD ["python", "-c", "import os,uvicorn; uvicorn.run('main:app', host='0.0.0.0', port=int(os.environ.get('PORT', 8000)))"]
+ENTRYPOINT ["/bin/sh", "/app/start.sh"]
