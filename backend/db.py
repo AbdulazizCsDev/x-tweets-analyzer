@@ -90,6 +90,12 @@ def get_tweets(account: str, session_id: str) -> list[dict]:
     return [dict(r) for r in rows]
 
 
+def delete_account(handle: str, session_id: str):
+    with get_conn() as conn:
+        conn.execute("DELETE FROM accounts WHERE handle=? AND session_id=?", (handle, session_id))
+        conn.execute("DELETE FROM tweets WHERE account=? AND session_id=?", (handle, session_id))
+
+
 def get_accounts(session_id: str) -> list[dict]:
     with get_conn() as conn:
         rows = conn.execute(

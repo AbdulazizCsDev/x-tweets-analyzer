@@ -61,6 +61,10 @@ export async function getAccounts(): Promise<Account[]> {
   return data;
 }
 
+export async function deleteAccount(handle: string): Promise<void> {
+  await api.delete(`/ingest/accounts/${handle}`);
+}
+
 export async function getAnalytics(account: string) {
   const { data } = await api.get(`/analytics/${account}`);
   return data;

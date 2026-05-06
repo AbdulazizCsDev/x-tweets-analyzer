@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Header, HTTPException
 from models import IngestResponse, IngestTweetsRequest
-from db import upsert_tweets, get_accounts
+from db import upsert_tweets, get_accounts, delete_account
 
 router = APIRouter()
 
@@ -28,3 +28,11 @@ def ingest_tweets(body: IngestTweetsRequest, x_session_id: str = Header("")):
 @router.get("/accounts")
 def list_accounts(x_session_id: str = Header("")):
     return get_accounts(x_session_id)
+
+
+@router.delete("/accounts/{handle}")
+def remove_account(handle: str, x_session_id: str = Header("")):
+    if not x_session_id.strip():
+        raise HTTPException(400, "session_id مطلوب")
+    delete_account(handle.lower(), x_session_id)
+    return {"ok": True}
