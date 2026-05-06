@@ -38,6 +38,7 @@ export default function Home() {
   const [archiveFile, setArchiveFile] = useState<File | null>(null);
   const [step, setStep] = useState<Step>(1);
   const [dragOver, setDragOver] = useState(false);
+  const [confirmDelete, setConfirmDelete] = useState<string | null>(null);
 
   useEffect(() => {
     getAccounts().then(setAccounts).catch(() => {});
@@ -236,16 +237,35 @@ export default function Home() {
                       <span className="opacity-60 mr-1">({a.tweet_count.toLocaleString()})</span>
                       <ChevronStart size={12} />
                     </button>
-                    <button
-                      onClick={async () => {
-                        await deleteAccount(a.handle);
-                        setAccounts((prev) => prev.filter((x) => x.handle !== a.handle));
-                      }}
-                      className="w-5 h-5 flex items-center justify-center rounded-full text-slate-500 hover:text-red-400 hover:bg-red-400/10 transition text-xs"
-                      title="حذف"
-                    >
-                      ✕
-                    </button>
+
+                    {confirmDelete === a.handle ? (
+                      <div className="flex items-center gap-1">
+                        <button
+                          onClick={async () => {
+                            await deleteAccount(a.handle);
+                            setAccounts((prev) => prev.filter((x) => x.handle !== a.handle));
+                            setConfirmDelete(null);
+                          }}
+                          className="text-xs px-2 py-0.5 rounded-lg bg-red-500/20 text-red-400 hover:bg-red-500/30 transition font-semibold"
+                        >
+                          حذف
+                        </button>
+                        <button
+                          onClick={() => setConfirmDelete(null)}
+                          className="text-xs px-2 py-0.5 rounded-lg bg-slate-700/50 text-slate-400 hover:text-white transition"
+                        >
+                          إلغاء
+                        </button>
+                      </div>
+                    ) : (
+                      <button
+                        onClick={() => setConfirmDelete(a.handle)}
+                        className="w-5 h-5 flex items-center justify-center rounded-full text-slate-500 hover:text-red-400 hover:bg-red-400/10 transition text-xs"
+                        title="حذف"
+                      >
+                        ✕
+                      </button>
+                    )}
                   </div>
                 ))}
               </div>
