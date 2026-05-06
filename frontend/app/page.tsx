@@ -7,7 +7,7 @@ import {
   ChevronLeft, ChevronRight, Shield, Zap, BookOpen, Lock,
   BarChart2, CalendarDays, TrendingUp, MessageSquare,
 } from "lucide-react";
-import { uploadArchive, getAccounts, Account } from "@/lib/api";
+import { uploadArchive, getAccounts, deleteAccount, Account } from "@/lib/api";
 import { useI18n } from "@/lib/i18n-context";
 import LangToggle from "@/components/LangToggle";
 
@@ -42,6 +42,7 @@ export default function Home() {
   useEffect(() => {
     getAccounts().then(setAccounts).catch(() => {});
   }, []);
+
 
   function scrollToUpload() {
     uploadRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
@@ -226,15 +227,26 @@ export default function Home() {
               <p className="text-slate-400 text-sm mb-3">{t.prevAccounts}</p>
               <div className="flex flex-wrap justify-center gap-2">
                 {accounts.map((a) => (
-                  <button
-                    key={a.handle}
-                    onClick={() => router.push(`/dashboard/${a.handle}`)}
-                    className="badge badge-violet hover:opacity-80 transition cursor-pointer"
-                  >
-                    @{a.handle}
-                    <span className="opacity-60 mr-1">({a.tweet_count.toLocaleString()})</span>
-                    <ChevronStart size={12} />
-                  </button>
+                  <div key={a.handle} className="flex items-center gap-1">
+                    <button
+                      onClick={() => router.push(`/dashboard/${a.handle}`)}
+                      className="badge badge-violet hover:opacity-80 transition cursor-pointer"
+                    >
+                      @{a.handle}
+                      <span className="opacity-60 mr-1">({a.tweet_count.toLocaleString()})</span>
+                      <ChevronStart size={12} />
+                    </button>
+                    <button
+                      onClick={async () => {
+                        await deleteAccount(a.handle);
+                        setAccounts((prev) => prev.filter((x) => x.handle !== a.handle));
+                      }}
+                      className="w-5 h-5 flex items-center justify-center rounded-full text-slate-500 hover:text-red-400 hover:bg-red-400/10 transition text-xs"
+                      title="حذف"
+                    >
+                      ✕
+                    </button>
+                  </div>
                 ))}
               </div>
             </div>
@@ -259,7 +271,6 @@ export default function Home() {
                     onKeyDown={(e) => e.key === "Enter" && nextStep()}
                     placeholder={t.accountPlaceholder}
                     className="input mb-4"
-                    autoFocus
                   />
                   <button
                     onClick={nextStep}
