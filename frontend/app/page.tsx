@@ -43,6 +43,13 @@ export default function Home() {
     getAccounts().then(setAccounts).catch(() => {});
   }, []);
 
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      uploadRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
+    }, 1200);
+    return () => clearTimeout(timer);
+  }, []);
+
   function scrollToUpload() {
     uploadRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
   }
