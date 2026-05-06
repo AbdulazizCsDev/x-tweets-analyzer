@@ -1,42 +1,43 @@
-# X Analyzer
+<div align="center">
 
-أداة تحليل تغريدات X بالذكاء الاصطناعي. تستورد آلاف التغريدات بدون مفتاح Twitter API، وتكتشف أنماطاً خفية باستخدام Claude.
+# بين السطور
 
-## المصادر المدعومة
-- **أرشيف X الرسمي** (ZIP) — مجاني وكامل لتاريخك
-- **Apify** — لجلب أي حساب عام (الحساب المجاني يعطي ~12K تغريدة شهرياً)
+**ما لا تراه في تغريداتك — أراه أنا**
 
-## ميزات الذكاء الاصطناعي
-- **تجميع المواضيع** (Topic clustering)
-- **اكتشاف الأنماط** (Pattern mining)
-- **ملف الصوت والشخصية** (Voice profile)
-- **التغريدات الشاذة** (Anomalies)
-- **توصيات قابلة للتطبيق** (Recommendations)
+تحليل ذكي لأرشيف X يكشف الأنماط الخفية ويحوّل تغريداتك إلى قرارات.
 
-## التشغيل المحلي
+</div>
 
-### Backend (FastAPI)
+---
+
+## ✦ ما الذي يفعله
+
+- **قمع المحتوى** — TOFU / MOFU / BOFU، ولأين تتسرّب فرص التحويل.
+- **صيغة الفائزين** — قالب قابل للنسخ من أعلى تغريداتك أداءً.
+- **مصفوفة المواضيع** — منجم / ذهب / مهدور / ميت.
+- **خطة الأسبوع** — ٧ تغريدات جاهزة للنشر بأسلوبك أنت.
+- **محادثة حرّة** — اسأل بياناتك أي سؤال.
+
+## ✦ الخصوصية أولاً
+
+أرشيف X يُفكّ ويُحلَّل **داخل متصفحك** — الملف لا يغادر جهازك. مفتاح Anthropic يُحفظ في `localStorage` فقط، ولا يصل إليه أحد.
+
+## ✦ التشغيل المحلي
+
 ```bash
-cd backend
-python -m venv venv
-source venv/bin/activate     # Linux/Mac
-pip install -r requirements.txt
-uvicorn main:app --reload
+# Backend
+cd backend && pip install -r requirements.txt && uvicorn main:app --reload
+
+# Frontend
+cd frontend && npm install && npm run dev
 ```
-يعمل على `http://localhost:8000`.
 
-### Frontend (Next.js)
-```bash
-cd frontend
-npm install
-npm run dev
-```
-يعمل على `http://localhost:3000`.
+## ✦ المكدّس
 
-## المفاتيح المطلوبة (من المستخدم)
-- **Anthropic API key** — لتحليلات AI (يُحفظ محلياً في المتصفح)
-- **Apify API token** — اختياري، فقط لو استخدمت مصدر Apify
+`Next.js 16` · `React 19` · `FastAPI` · `SQLite` · `Anthropic Claude` · `Tailwind`
 
-## التقنيات
-- Backend: FastAPI · SQLite · anthropic-sdk · apify-client
-- Frontend: Next.js 15 · React 19 · Tailwind · Recharts · shadcn-style components
+---
+
+<div align="center">
+<sub>صُنع لمن يكتب على X بجدّية.</sub>
+</div>
