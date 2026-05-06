@@ -105,7 +105,20 @@ export async function parseArchiveInBrowser(
 ): Promise<NormalizedTweet[]> {
   onProgress?.({ phase: "reading", filesDone: 0, filesTotal: 1 });
 
-  const zip = await JSZip.loadAsync(file);
+  // Read the bytes ourselves rather than letting JSZip hold the File reference.
+  // Some browsers (esp. when the file lives on a cloud-synced folder like
+  // OneDrive/iCloud) throw NotReadableError if the underlying file changes
+  // between selection and read. Surfacing a clear, actionable message helps.
+  let buffer: ArrayBuffer;
+  try {
+    buffer = await file.arrayBuffer();
+  } catch {
+    throw new Error(
+      "تعذّر قراءة الملف. قد يكون الملف قد نُقل أو عُدّل — الرجاء إعادة اختياره من جديد."
+    );
+  }
+
+  const zip = await JSZip.loadAsync(buffer);
   const tweetFiles = Object.keys(zip.files)
     .filter((name) => TWEETS_FILE_RE.test(name))
     .sort();
