@@ -1,28 +1,28 @@
 <div align="center">
 
-# بين السطور
+# Bayn Al-Sutoor · بين السطور
 
-**ما لا تراه في تغريداتك — أراه أنا**
+**What you can't see in your tweets — I can.**
 
-تحليل ذكي لأرشيف X يكشف الأنماط الخفية ويحوّل تغريداتك إلى قرارات.
+AI-powered analysis of your X archive that uncovers hidden patterns and turns your tweets into decisions.
 
 </div>
 
 ---
 
-## ✦ ما الذي يفعله
+## ✦ What it does
 
-- **قمع المحتوى** — TOFU / MOFU / BOFU، ولأين تتسرّب فرص التحويل.
-- **صيغة الفائزين** — قالب قابل للنسخ من أعلى تغريداتك أداءً.
-- **مصفوفة المواضيع** — منجم / ذهب / مهدور / ميت.
-- **خطة الأسبوع** — ٧ تغريدات جاهزة للنشر بأسلوبك أنت.
-- **محادثة حرّة** — اسأل بياناتك أي سؤال.
+- **Content funnel** — TOFU / MOFU / BOFU, and where conversions leak.
+- **Winner formula** — a copy-ready template from your top-performing tweets.
+- **Topic matrix** — Goldmine / Gold / Wasted / Dead.
+- **Weekly plan** — 7 publish-ready tweets in your own voice.
+- **Free chat** — ask your data anything.
 
-## ✦ الخصوصية أولاً
+## ✦ Privacy first
 
-أرشيف X يُفكّ ويُحلَّل **داخل متصفحك** — الملف لا يغادر جهازك. مفتاح Anthropic يُحفظ في `localStorage` فقط، ولا يصل إليه أحد.
+Your X archive is unpacked and analyzed **inside your browser** — the file never leaves your machine. Your Anthropic key lives in `localStorage` only.
 
-## ✦ التشغيل المحلي
+## ✦ Run locally
 
 ```bash
 # Backend
@@ -32,12 +32,12 @@ cd backend && pip install -r requirements.txt && uvicorn main:app --reload
 cd frontend && npm install && npm run dev
 ```
 
-## ✦ المكدّس
+## ✦ Stack
 
 `Next.js 16` · `React 19` · `FastAPI` · `SQLite` · `Anthropic Claude` · `Tailwind`
 
 ---
 
 <div align="center">
-<sub>صُنع لمن يكتب على X بجدّية.</sub>
+<sub>Built for people who take X seriously.</sub>
 </div>
