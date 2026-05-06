@@ -7,7 +7,16 @@
 //
 // Mirrors backend/services/archive_parser.py so analytics stay identical.
 
-import JSZip from "jszip";
+import { BlobReader, TextWriter, ZipReader, configure, type Entry } from "@zip.js/zip.js";
+
+type EntryWithData = Entry & {
+  getData: (writer: TextWriter) => Promise<string>;
+};
+
+// X archives can be 3-5 GB but the tweets live in a few MB of .js files.
+// zip.js reads the central directory then random-accesses just those entries
+// via Blob.slice(), so we never hold the full archive in memory.
+configure({ useWebWorkers: false });
 
 export interface NormalizedTweet {
   id: string;
@@ -105,21 +114,33 @@ export async function parseArchiveInBrowser(
 ): Promise<NormalizedTweet[]> {
   onProgress?.({ phase: "reading", filesDone: 0, filesTotal: 1 });
 
-  const zip = await JSZip.loadAsync(file);
-  const tweetFiles = Object.keys(zip.files)
-    .filter((name) => TWEETS_FILE_RE.test(name))
-    .sort();
+  const reader = new ZipReader(new BlobReader(file));
+  let entries;
+  try {
+    entries = await reader.getEntries();
+  } catch {
+    await reader.close();
+    throw new Error(
+      "تعذّر قراءة الأرشيف. تأكد أن الملف ZIP صالح ومحمّل بالكامل على جهازك (وليس في مجلد سحابي)."
+    );
+  }
 
-  if (tweetFiles.length === 0) {
+  const tweetEntries = entries
+    .filter((e) => !e.directory && TWEETS_FILE_RE.test(e.filename))
+    .sort((a, b) => a.filename.localeCompare(b.filename));
+
+  if (tweetEntries.length === 0) {
+    await reader.close();
     throw new Error("لم يتم العثور على ملف tweets.js داخل الأرشيف");
   }
 
-  const total = tweetFiles.length;
+  const total = tweetEntries.length;
   const allItems: unknown[] = [];
 
-  for (let i = 0; i < tweetFiles.length; i++) {
+  for (let i = 0; i < tweetEntries.length; i++) {
     onProgress?.({ phase: "extracting", filesDone: i, filesTotal: total });
-    const raw = await zip.files[tweetFiles[i]].async("string");
+    const entry = tweetEntries[i] as EntryWithData;
+    const raw = await entry.getData(new TextWriter());
     onProgress?.({ phase: "parsing", filesDone: i, filesTotal: total });
     try {
       const items = jsToJson(raw);
@@ -128,6 +149,7 @@ export async function parseArchiveInBrowser(
       // Skip files we can't parse — archives sometimes have stub files
     }
   }
+  await reader.close();
 
   if (allItems.length === 0) {
     throw new Error("الأرشيف لا يحتوي على تغريدات قابلة للقراءة");
