@@ -1,6 +1,6 @@
 <div align="center">
 
-# Bayn Al-Sutoor · بين السطور
+# Between the Lines
 
 **What you can't see in your tweets — I can.**
 
